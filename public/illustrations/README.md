@@ -29,6 +29,8 @@ Each of the 20 indicators in `data/indicator-mapping.csv` has one illustration, 
 
 `indicators/indicator-01.svg` … `indicators/indicator-20.svg`
 
+Each illustration also needs a **faded version**, shown while another illustration is hovered or selected: `indicator-01-faded.svg`. The site swaps the files rather than lowering opacity, so export the faded artwork as designed.
+
 Add `-mobile` for a mobile version, e.g. `indicator-01-mobile.svg`. The site finds each illustration from its number, so if indicators are renumbered in the sheet, rename the files to match.
 
 ## Interactive layers
