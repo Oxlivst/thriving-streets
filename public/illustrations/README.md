@@ -23,6 +23,14 @@ Final illustrations exported from Figma. Everything here is published with the s
 
 Examples: `vision-hero-street-desktop.svg`, `vision-hero-street-mobile.svg`, `themes-healthy-lives-icon.svg`
 
+## Indicator illustrations
+
+Each of the 20 indicators in `data/indicator-mapping.csv` has one illustration, in `indicators/`. Name each file after the indicator's number (column A of the CSV), with two digits:
+
+`indicators/indicator-01.svg` … `indicators/indicator-20.svg`
+
+Add `-mobile` for a mobile version, e.g. `indicator-01-mobile.svg`. The site finds each illustration from its number, so if indicators are renumbered in the sheet, rename the files to match.
+
 ## Interactive layers
 
 Give interactive layers a prefix in Figma, so they can be wired up by ID:
