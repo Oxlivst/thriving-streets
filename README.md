@@ -17,6 +17,12 @@ npm run dev      # http://localhost:5173, rebuilds data from data/*.csv first
 npm run build    # static site in dist/
 ```
 
+## Publishing
+
+Every push to `main` builds the site and publishes it to GitHub Pages at https://oxlivst.github.io/thriving-streets/ (see `.github/workflows/deploy.yml`). Progress shows in the repo's **Actions** tab.
+
+The Pages source must be set to **GitHub Actions** (Settings → Pages). Publishing straight from the branch serves unbuilt source files, and the indicator data won't load.
+
 ## Where to change things
 
 | To change… | Edit |

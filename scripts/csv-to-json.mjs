@@ -106,15 +106,15 @@ for (const row of rows.slice(FIRST_INDICATOR_ROW)) {
   const indicator = {
     number,
     text: clean(row[1] ?? ''),
-    illustration: `/illustrations/indicators/indicator-${padded}.svg`,
-    illustrationFaded: `/illustrations/indicators/indicator-${padded}-faded.svg`,
+    illustration: `illustrations/indicators/indicator-${padded}.svg`,
+    illustrationFaded: `illustrations/indicators/indicator-${padded}-faded.svg`,
     mappings,
   };
 
   if (!mappings.some((m) => m.strength === 'strong')) {
     fail(`indicator ${number} ("${indicator.text}") has no strong (✓✓) mapping, so its wheel would be empty.`);
   }
-  if (!existsSync(resolve(root, 'public', indicator.illustration.slice(1)))) missingArt.push(number);
+  if (!existsSync(resolve(root, 'public', indicator.illustration))) missingArt.push(number);
   indicators.push(indicator);
 }
 
