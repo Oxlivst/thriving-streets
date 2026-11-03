@@ -93,12 +93,13 @@
 
   /* ===== Hero ============================================================ */
   .hero-title {
-    /* Two stacked layers: the doodle shadow sits behind the solid title. */
-    @apply relative mx-auto h-[207px] w-[636px] text-center text-h1-home;
+    /* Two stacked layers: the doodle shadow sits behind the solid title.
+       The box is sized in em (636 × 207 at 84px), so it follows the fluid title size. */
+    @apply relative mx-auto h-[2.464em] w-[7.571em] text-center text-h1-home;
   }
 
   .hero-title__shadow {
-    @apply pointer-events-none absolute inset-x-0 top-[7px] -left-[6px] font-display tracking-normal whitespace-nowrap text-bg-tertiary select-none;
+    @apply pointer-events-none absolute inset-x-0 top-[0.083em] -left-[0.071em] font-display tracking-normal whitespace-nowrap text-bg-tertiary select-none;
   }
 
   /* Once hero.js has placed each shadow letter, the layer spans the whole title. */
@@ -131,8 +132,16 @@
   }
 
   /* ===== Scenes ========================================================== */
+  /* The scene's width is the reference for its title size (container query units). */
+  .scene {
+    container-type: inline-size;
+  }
+
+  /* One line wherever it fits: the title eases from 18px down to 16px with the scene's
+     width (it needs ~27× its font size), and only wraps when even 16px doesn't fit. */
   .scene-title {
-    @apply text-center text-body font-bold whitespace-nowrap text-text;
+    @apply text-center text-body font-bold text-balance text-text;
+    font-size: clamp(1rem, 3.6cqi, var(--text-body));
   }
 
   /* An illustration slot: positioned absolutely inside its scene box. */
@@ -179,7 +188,7 @@
 
   /* Indicator text under a hovered illustration: rises in and fades, after a short delay (Scene.jsx). */
   .hover-label {
-    @apply pointer-events-none absolute z-10 w-max max-w-[300px] px-7 pt-[14px] pb-4 text-center text-[12px] leading-4 font-semibold text-text-muted;
+    @apply pointer-events-none absolute z-10 w-max max-w-[300px] px-7 pt-[14px] pb-4 text-center text-label font-semibold text-text-muted;
     transform-origin: top center;
     transform: translateX(-50%) scale(var(--label-scale, 1)) translateY(14px);
     opacity: 0;
@@ -189,7 +198,7 @@
   }
 
   .hover-label__hint {
-    @apply relative mt-1.5 text-[11px] leading-[14px] font-normal text-text-muted;
+    @apply relative mt-1.5 text-label-hint font-normal text-text-muted;
   }
 
   /* Visible labels catch the pointer, so moving onto one keeps it open (WCAG 1.4.13). */
@@ -210,15 +219,39 @@
     animation: fade-out 450ms ease-out both;
   }
 
+  /* The focus view's scroll rests on each indicator's step (see FocusView). */
+  .focus-scroller {
+    scroll-snap-type: y mandatory;
+  }
+
+  .focus-snap {
+    @apply pointer-events-none absolute left-0 h-px w-px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  /* Beside the wheel the scene is narrower than its column; its title may use the
+     column's spare width to stay on one line (centred over the art when it fits). */
+  .focus-scenes--beside .scene-title {
+    width: max-content;
+    min-width: 100%;
+    max-width: var(--column-width);
+  }
+
   /* The scene column glides in from the page centre to its place on the left. */
   .focus-scenes {
     animation: slide-from-centre var(--duration-move) var(--ease-smooth) both;
   }
 
-  /* Help button: a 48px circle that expands leftwards into the hint pill. */
+  /* Help: a 48px circle (the ? icon), collapsed by default; expands rightwards into the hint pill.
+     Top-aligned (here and in its row), so the ? and the × stay put while the pill grows downwards. */
   .focus-help {
-    @apply flex h-12 items-center rounded-full bg-bg text-text;
+    @apply flex min-h-12 min-w-0 items-start rounded-[24px] bg-bg text-text;
     transition: background-color 300ms var(--ease-smooth);
+  }
+
+  .focus-help__toggle {
+    @apply flex size-12 shrink-0 items-center justify-center rounded-full;
   }
 
   .focus-help:hover,
@@ -226,19 +259,60 @@
     @apply bg-bg-alt;
   }
 
+  /* The pill's text area: a mask that widens to reveal the text. */
   .focus-help__text {
-    @apply overflow-hidden text-[14px] leading-5 font-medium whitespace-nowrap opacity-0;
+    @apply overflow-hidden text-help font-medium opacity-0;
     max-width: 0;
+    max-height: 0;
     transition:
       max-width var(--duration-move) var(--ease-smooth),
-      opacity 400ms var(--ease-smooth),
-      padding var(--duration-move) var(--ease-smooth);
+      max-height var(--duration-move) var(--ease-smooth),
+      opacity 300ms var(--ease-smooth);
   }
 
-  .focus-help[aria-expanded='true'] .focus-help__text {
-    @apply pr-6 opacity-100;
-    max-width: 560px;
-    transition-delay: 0ms, 150ms, 0ms;
+  /* The text itself keeps its final size and line breaks throughout, so it never
+     re-wraps while the pill expands or collapses. */
+  .focus-help__inner {
+    /* 14px top padding puts the first line's centre level with the ? (24px down). */
+    @apply block w-max py-3.5 pr-6;
+    max-width: var(--hint-max, 560px);
+  }
+
+  /* Expands while hovered or focused (the link inside stays reachable by keyboard),
+     or when the ? is tapped on touch screens (data-open). */
+  .focus-help:hover .focus-help__text,
+  .focus-help:has(:focus-visible) .focus-help__text,
+  .focus-help[data-open='true'] .focus-help__text {
+    @apply opacity-100;
+    max-width: var(--hint-max, 560px);
+    max-height: 6rem;
+    transition-delay: 0ms, 0ms, 100ms;
+  }
+
+  .focus-help__link {
+    @apply inline-flex items-center gap-1 font-bold whitespace-nowrap underline decoration-1 underline-offset-2 hover:decoration-2;
+  }
+
+  /* Below 960px: the scenes slide in from the left in a drawer. */
+  .focus-drawer {
+    @apply absolute inset-y-0 left-0 z-30 bg-white shadow-[0_0_32px_rgb(23_37_91/0.12)];
+    translate: -100% 0;
+    transition: translate var(--duration-move) var(--ease-smooth);
+  }
+
+  .focus-drawer--open {
+    translate: 0 0;
+  }
+
+  /* The tab stays on the drawer's outer edge, so it is visible while closed;
+     it sits below the ? / × row so it never covers the ? on narrow windows. */
+  .focus-drawer__tab {
+    @apply absolute top-[120px] left-full flex items-center gap-1 rounded-r-full whitespace-nowrap bg-bg py-3 pr-4 pl-3 text-nav font-semibold text-text hover:bg-bg-alt;
+  }
+
+  .focus-drawer__scrim {
+    @apply absolute inset-0 z-20 bg-text/10;
+    animation: fade-in 400ms var(--ease-smooth) both;
   }
 
   .focus-close {
@@ -260,22 +334,25 @@
 
   @keyframes slide-from-centre {
     from {
-      transform: translateX(323px);
+      transform: translateX(25vw);
     }
   }
 
   /* ===== Indicator wheel ================================================= */
-  /* A new wheel rises in from below; the old one drifts up and fades (INT-07). */
+  /* Changing indicator: a crossfade with a little motion. Moving on, the new wheel
+     rises in and settles from slightly smaller; the old one drifts up as it fades.
+     Going back (data-dir="up"), the motion runs the other way. */
   .wheel-in {
-    animation: wheel-in-from-below var(--duration-move) var(--ease-smooth) both;
+    animation: wheel-in-from-below 600ms var(--ease-smooth) both;
+    transform-origin: 50% 43%; /* the wheel's centre in its 600 × 700 box */
   }
 
   .wheel-out {
-    animation: wheel-out-upwards 700ms var(--ease-smooth) both;
+    animation: wheel-out-upwards 500ms var(--ease-smooth) both;
+    transform-origin: 50% 43%;
     pointer-events: none;
   }
 
-  /* Going back to an earlier indicator: the motion runs the other way. */
   .wheel-in[data-dir='up'] {
     animation-name: wheel-in-from-above;
   }
@@ -287,28 +364,28 @@
   @keyframes wheel-in-from-below {
     from {
       opacity: 0;
-      transform: translateY(72px);
+      transform: translateY(16px) scale(0.97);
     }
   }
 
   @keyframes wheel-in-from-above {
     from {
       opacity: 0;
-      transform: translateY(-72px);
+      transform: translateY(-16px) scale(0.97);
     }
   }
 
   @keyframes wheel-out-upwards {
     to {
       opacity: 0;
-      transform: translateY(-56px);
+      transform: translateY(-12px) scale(1.01);
     }
   }
 
   @keyframes wheel-out-downwards {
     to {
       opacity: 0;
-      transform: translateY(56px);
+      transform: translateY(12px) scale(1.01);
     }
   }
 
@@ -323,6 +400,11 @@
 
   .wheel-segment--clickable:hover > path:first-child {
     opacity: 1;
+  }
+
+  /* The opening theme's collapsed lines fade as its factor bands come out (IndicatorWheel). */
+  .wheel-arc--handoff {
+    animation: fade-out 350ms var(--ease-smooth) both;
   }
 
   .wheel-band {

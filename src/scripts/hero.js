@@ -7,13 +7,16 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').match
 // The title's doodle shadow is set in a different font from the title, so its letters
 // are slightly different widths and a single block offset drifts along each line.
 // Instead, each shadow letter is centred on its title letter plus one fixed offset.
-const SHADOW_OFFSET = { x: -6, y: 7 }; // px, from the Figma hero (title at 322, shadow at 316 / +7)
+// From the Figma hero (title at 322, shadow at 316 / +7 at 84px), as a share of the font size,
+// so it holds as the fluid title size changes.
+const SHADOW_OFFSET_EM = { x: -6 / 84, y: 7 / 84 };
 
-function alignTitleShadow() {
-  const title = document.querySelector('.hero-title');
-  const main = title?.querySelector('.hero-title__main');
-  const shadow = title?.querySelector('.hero-title__shadow');
-  if (!main || !shadow) return;
+function alignTitleShadow(title, main, shadow, originalShadow) {
+  // Start again from the shadow's own text (it is rebuilt from single letters below).
+  shadow.innerHTML = originalShadow;
+  delete shadow.dataset.aligned;
+  const fontSize = parseFloat(getComputedStyle(title).fontSize);
+  const SHADOW_OFFSET = { x: SHADOW_OFFSET_EM.x * fontSize, y: SHADOW_OFFSET_EM.y * fontSize };
 
   const letterBoxes = (el) => {
     const boxes = [];
@@ -67,7 +70,23 @@ function alignTitleShadow() {
 }
 
 export function initHero() {
-  document.fonts.ready.then(alignTitleShadow);
+  const title = document.querySelector('.hero-title');
+  const main = title?.querySelector('.hero-title__main');
+  const shadow = title?.querySelector('.hero-title__shadow');
+  if (main && shadow) {
+    const originalShadow = shadow.innerHTML;
+    const align = () => alignTitleShadow(title, main, shadow, originalShadow);
+    // Align once the fonts are in, and again whenever the title's size changes (fluid type).
+    document.fonts.ready.then(() => {
+      align();
+      let lastWidth = title.offsetWidth;
+      new ResizeObserver(() => {
+        if (title.offsetWidth === lastWidth) return;
+        lastWidth = title.offsetWidth;
+        align();
+      }).observe(title);
+    });
+  }
 
   const risers = document.querySelectorAll('[data-rise]');
   risers.forEach((el, i) => {
