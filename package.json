@@ -1,0 +1,26 @@
+{
+  "name": "thriving-streets",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "data": "node scripts/csv-to-json.mjs",
+    "dev": "npm run data && vite",
+    "build": "npm run data && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource/manrope": "^5.3.0",
+    "@fontsource/rubik": "^5.3.0",
+    "@fontsource/rubik-doodle-shadow": "^5.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.4",
+    "@vitejs/plugin-react": "^6.2.1",
+    "csv-parse": "^7.0.3",
+    "tailwindcss": "^4.3.4",
+    "vite": "^8.3.5"
+  }
+}

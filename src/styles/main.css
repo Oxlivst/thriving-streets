@@ -1,0 +1,248 @@
+/* ==========================================================================
+   Main stylesheet: Tailwind + tokens + semantic component classes.
+   Markup uses these semantic classes; values come only from tokens.css.
+   ========================================================================== */
+
+@import 'tailwindcss';
+@import './tokens.css';
+
+/* ===== Base ============================================================== */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-body text-text;
+    /* Page tint: Background-primary at the top of the viewport, fading to white. */
+    background: linear-gradient(to bottom, var(--color-bg) 0, #fff 1024px) fixed;
+    background-color: #fff;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-highlight-strong);
+    outline-offset: 3px;
+  }
+
+  /* Entrance: ease into place from a slight offset (hero.js adds the class). */
+  .rise-in {
+    animation: rise-in var(--duration-entrance) var(--ease-smooth) var(--rise-delay, 0ms) both;
+  }
+
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* ===== Top navigation ================================================= */
+  .site-header {
+    @apply sticky top-0 z-30;
+  }
+
+  .site-nav {
+    @apply flex h-[60px] items-end justify-center gap-8 bg-bg;
+  }
+
+  .nav-link {
+    @apply border-b-2 border-transparent py-2 text-nav text-text-muted transition-colors hover:text-text;
+  }
+
+  .nav-link[aria-current='page'] {
+    @apply border-red-1 font-bold text-text;
+  }
+
+  /* ===== Hero ============================================================ */
+  .hero-title {
+    /* Two stacked layers: the yellow doodle shadow sits behind the solid title. */
+    @apply relative mx-auto h-[207px] w-[636px] text-center text-h1-home;
+  }
+
+  .hero-title__shadow {
+    @apply absolute inset-x-0 top-[11px] -left-[6px] font-display tracking-normal whitespace-nowrap text-highlight-strong;
+  }
+
+  .hero-title__main {
+    @apply relative font-heading font-extrabold whitespace-nowrap text-red-1;
+  }
+
+  .hero-subtitle {
+    @apply font-heading text-h3 font-semibold text-red-2;
+  }
+
+  .callout {
+    @apply absolute flex h-[62px] items-center justify-center rounded-[11px] bg-green-3 px-6 py-4 text-body font-bold whitespace-nowrap text-white;
+  }
+
+  .callout-outline {
+    @apply absolute h-[62px] rounded-[11px] border-2 border-outline-pink;
+  }
+
+  .hero-prompt {
+    @apply text-center text-body text-text-muted;
+  }
+
+  /* ===== Scenes ========================================================== */
+  .scene-title {
+    @apply text-center text-body font-bold text-red-2;
+  }
+
+  /* An illustration slot: positioned absolutely inside its scene box. */
+  /* `translate` carries the scroll parallax (set per frame, never animated);
+     `scale` and `transform` carry the hover lift, which eases in and out. */
+  .scene-slot {
+    @apply absolute block cursor-pointer border-0 bg-transparent p-0;
+    transform-origin: 50% 60%;
+    transition:
+      scale var(--duration-move) var(--ease-smooth),
+      transform var(--duration-move) var(--ease-smooth);
+  }
+
+  /* Hovered illustration floats up a touch. */
+  .scene-slot[data-lifted='true'] {
+    scale: 1.03;
+    transform: translateY(-6px);
+  }
+
+  .scene-slot img {
+    @apply pointer-events-none absolute inset-0 h-full w-full select-none;
+    transition: opacity var(--duration-fade) var(--ease-smooth);
+  }
+
+  /* Scene description: a slow, gentle fade (eased in and out so it never pops). */
+  .scene-fade {
+    transition: opacity var(--duration-slow-fade) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .scene-halo {
+    @apply pointer-events-none absolute rounded-full bg-highlight-soft;
+    transition:
+      left var(--duration-move) var(--ease-smooth),
+      top var(--duration-move) var(--ease-smooth),
+      width var(--duration-move) var(--ease-smooth),
+      height var(--duration-move) var(--ease-smooth),
+      opacity var(--duration-fade) var(--ease-smooth);
+  }
+
+  /* Indicator text under a hovered illustration: rises in and fades, after a short delay (Scene.jsx). */
+  .hover-label {
+    @apply pointer-events-none absolute z-10 w-max max-w-[300px] px-7 pt-[14px] pb-4 text-center text-[12px] leading-4 font-semibold text-text-muted;
+    transform-origin: top center;
+    transform: translateX(-50%) scale(var(--label-scale, 1)) translateY(14px);
+    opacity: 0;
+    transition:
+      opacity 500ms var(--ease-smooth),
+      transform 600ms var(--ease-smooth);
+  }
+
+  .hover-label__hint {
+    @apply relative mt-1.5 text-[11px] leading-[14px] font-normal text-text-muted;
+  }
+
+  /* Visible labels catch the pointer, so moving onto one keeps it open (WCAG 1.4.13). */
+  .hover-label[data-visible='true'] {
+    @apply pointer-events-auto cursor-pointer;
+    transform: translateX(-50%) scale(var(--label-scale, 1)) translateY(0);
+    opacity: 1;
+    transition-duration: var(--duration-fade), var(--duration-move);
+  }
+
+  /* ===== Focus view ====================================================== */
+  .focus-view {
+    background: linear-gradient(to bottom, var(--color-bg) 0, #fff 964px) #fff;
+    animation: fade-in 600ms var(--ease-smooth) both;
+  }
+
+  .focus-view--closing {
+    animation: fade-out 450ms ease-out both;
+  }
+
+  /* The scene column glides in from the page centre to its place on the left. */
+  .focus-scenes {
+    animation: slide-from-centre var(--duration-move) var(--ease-smooth) both;
+  }
+
+  .focus-close {
+    @apply absolute top-6 right-8 z-10 flex size-12 items-center justify-center rounded-full bg-bg-tertiary text-white;
+    transition: transform 300ms var(--ease-smooth), background-color 300ms var(--ease-smooth);
+  }
+
+  .focus-close:hover {
+    @apply scale-105 bg-red-2;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes slide-from-centre {
+    from {
+      transform: translateX(323px);
+    }
+  }
+
+  /* ===== Indicator wheel ================================================= */
+  /* A new wheel rises in from below; the old one drifts up and fades (INT-07). */
+  .wheel-in {
+    animation: wheel-in var(--duration-move) var(--ease-smooth) both;
+  }
+
+  .wheel-out {
+    animation: wheel-out 600ms var(--ease-smooth) both;
+    pointer-events: none;
+  }
+
+  @keyframes wheel-in {
+    from {
+      opacity: 0;
+      transform: translateY(96px);
+    }
+  }
+
+  @keyframes wheel-out {
+    to {
+      opacity: 0;
+      transform: translateY(-48px);
+    }
+  }
+
+  .wheel-band {
+    animation: band-in var(--duration-fade) var(--ease-smooth) both;
+  }
+
+  @keyframes band-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+
+  .wheel-arrow {
+    @apply absolute flex size-12 items-center justify-center rounded-full bg-bg-tertiary text-white hover:scale-105 active:scale-95;
+    transition: transform 300ms var(--ease-smooth), opacity 300ms var(--ease-smooth);
+  }
+}

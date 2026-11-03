@@ -4,3 +4,6 @@ dist/
 *.log
 .env
 .env.*
+
+# Generated from data/*.csv at build time
+src/data/*.json

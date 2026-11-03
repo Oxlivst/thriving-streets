@@ -5,7 +5,27 @@ A microsite presenting a vision for thriving streets and neighbourhoods in Oxfor
 - **Build spec:** [Thriving Streets Microsite — Build Spec](https://claude.ai/artifact/T4GtxPYT4c6uy5LUceiCS9)
 - **Designs:** [Oxfordshire Future Streets (Figma)](https://www.figma.com/design/GgTp2DtbW3z0L5GG4Leabb/Oxfordshire-Future-Streets)
 
-> Status: setting up. The site code (Vite, Tailwind, React) is added in build phase 1.
+> Status: landing page built up to scene 1 (desktop).
+
+## Run it locally
+
+Needs [Node.js](https://nodejs.org) 20 or later.
+
+```bash
+npm install
+npm run dev      # http://localhost:5173, rebuilds data from data/*.csv first
+npm run build    # static site in dist/
+```
+
+## Where to change things
+
+| To change… | Edit |
+| --- | --- |
+| Colours, fonts, type sizes | `src/styles/tokens.css` |
+| Indicator data (themes, factors, mappings) | `data/indicator-mapping.csv`, then rebuild |
+| Scene compositions (illustration positions, halos) | `src/config/scenes.js` |
+| Wheel theme order and ring labels | `src/config/themes.js` |
+| Hero and page text | `index.html` |
 
 ## Where things go
 
