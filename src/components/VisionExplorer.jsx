@@ -14,7 +14,22 @@ import Scene from './Scene.jsx';
 import FocusView, { FOCUS_TITLE_TOP } from './FocusView.jsx';
 
 export default function VisionExplorer() {
-  const indicatorsByNumber = useMemo(() => new Map(data.indicators.map((i) => [i.number, i])), []);
+  // Illustration paths in the data are relative to the site root; BASE_URL makes them
+  // work wherever the site is hosted (e.g. /thriving-streets/ on GitHub Pages).
+  const indicatorsByNumber = useMemo(
+    () =>
+      new Map(
+        data.indicators.map((i) => [
+          i.number,
+          {
+            ...i,
+            illustration: import.meta.env.BASE_URL + i.illustration,
+            illustrationFaded: import.meta.env.BASE_URL + i.illustrationFaded,
+          },
+        ]),
+      ),
+    [],
+  );
   // Indicators that are placed in a scene, in number order.
   const order = useMemo(() => scenes.flatMap((s) => s.slots.map((slot) => slot.indicator)).sort((a, b) => a - b), []);
 
