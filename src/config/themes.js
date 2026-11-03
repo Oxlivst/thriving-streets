@@ -17,7 +17,7 @@ export const WHEEL_THEMES = [
 // Wheel mode (being compared):
 //   true  — every mapped theme shows its strong factors at once; arrows change indicator
 //   false — one theme at a time, rotated to the bottom; arrows step through themes
-export const WHEEL_EXPAND_ALL = true;
+export const WHEEL_EXPAND_ALL = false;
 
 // Shorter names for factors on the wheel, keyed by factor key (see indicators.json).
 // The CSV keeps the full names; these only change what the wheel shows.

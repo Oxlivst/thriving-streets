@@ -14,9 +14,10 @@
 
   body {
     @apply font-body text-text;
-    /* Page tint: Background-primary at the top of the viewport, fading to white. */
-    background: linear-gradient(to bottom, var(--color-bg) 0, #fff 1024px) fixed;
-    background-color: #fff;
+    /* White page; the hero's tint fades to white by the end of the hero (~900px)
+       and scrolls away with it. */
+    background: linear-gradient(to bottom, var(--color-hero-tint) 0, #fff 900px) no-repeat #fff;
+    background-size: 100% 900px;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -52,12 +53,34 @@
 
 @layer components {
   /* ===== Top navigation ================================================= */
+  /* Transparent over the hero's tint; turns white once the page scrolls (hero.js). */
+  /* Solid light background at all times, so it reads clearly over the white page. */
   .site-header {
-    @apply sticky top-0 z-30;
+    @apply sticky top-0 z-30 bg-nav-bg;
+    transition: translate 500ms var(--ease-smooth);
+  }
+
+  /* In the focus view (which pins the nav open) the bar is white, matching that view. */
+  .site-header[data-pinned='true'] {
+    @apply bg-white;
+  }
+
+  /* Slides up out of view while scrolling down (header.js). */
+  .site-header[data-hidden='true'] {
+    translate: 0 -100%;
+  }
+
+  /* Invisible band along the top of the window that brings a hidden nav back on hover. */
+  .nav-reveal-strip {
+    @apply fixed inset-x-0 top-0 z-40;
+  }
+
+  body:has(.site-header:not([data-hidden='true'])) .nav-reveal-strip {
+    @apply pointer-events-none;
   }
 
   .site-nav {
-    @apply flex h-[60px] items-end justify-center gap-8 bg-bg;
+    @apply flex h-[60px] items-end justify-center gap-8;
   }
 
   .nav-link {
@@ -70,12 +93,21 @@
 
   /* ===== Hero ============================================================ */
   .hero-title {
-    /* Two stacked layers: the yellow doodle shadow sits behind the solid title. */
+    /* Two stacked layers: the doodle shadow sits behind the solid title. */
     @apply relative mx-auto h-[207px] w-[636px] text-center text-h1-home;
   }
 
   .hero-title__shadow {
-    @apply absolute inset-x-0 top-[11px] -left-[6px] font-display tracking-normal whitespace-nowrap text-highlight-strong;
+    @apply pointer-events-none absolute inset-x-0 top-[7px] -left-[6px] font-display tracking-normal whitespace-nowrap text-bg-tertiary select-none;
+  }
+
+  /* Once hero.js has placed each shadow letter, the layer spans the whole title. */
+  .hero-title__shadow[data-aligned='true'] {
+    @apply inset-0;
+  }
+
+  .hero-title__shadow-letter {
+    @apply absolute leading-normal whitespace-pre;
   }
 
   .hero-title__main {
@@ -95,12 +127,12 @@
   }
 
   .hero-prompt {
-    @apply text-center text-body text-text-muted;
+    @apply text-center text-body text-hero-prompt;
   }
 
   /* ===== Scenes ========================================================== */
   .scene-title {
-    @apply text-center text-body font-bold text-red-2;
+    @apply text-center text-body font-bold whitespace-nowrap text-text;
   }
 
   /* An illustration slot: positioned absolutely inside its scene box. */
@@ -118,6 +150,11 @@
   .scene-slot[data-lifted='true'] {
     scale: 1.03;
     transform: translateY(-6px);
+  }
+
+  /* Selected illustration in the focus view: slightly larger, in place of a halo. */
+  .scene-slot[data-selected='true'] {
+    scale: 1.06;
   }
 
   .scene-slot img {
@@ -165,7 +202,7 @@
 
   /* ===== Focus view ====================================================== */
   .focus-view {
-    background: linear-gradient(to bottom, var(--color-bg) 0, #fff 964px) #fff;
+    background: #fff;
     animation: fade-in 600ms var(--ease-smooth) both;
   }
 
@@ -178,13 +215,35 @@
     animation: slide-from-centre var(--duration-move) var(--ease-smooth) both;
   }
 
-  .focus-close {
-    @apply absolute top-6 right-8 z-10 flex size-12 items-center justify-center rounded-full bg-bg-tertiary text-white;
-    transition: transform 300ms var(--ease-smooth), background-color 300ms var(--ease-smooth);
+  /* Help button: a 48px circle that expands leftwards into the hint pill. */
+  .focus-help {
+    @apply flex h-12 items-center rounded-full bg-bg text-text;
+    transition: background-color 300ms var(--ease-smooth);
   }
 
+  .focus-help:hover,
   .focus-close:hover {
-    @apply scale-105 bg-red-2;
+    @apply bg-bg-alt;
+  }
+
+  .focus-help__text {
+    @apply overflow-hidden text-[14px] leading-5 font-medium whitespace-nowrap opacity-0;
+    max-width: 0;
+    transition:
+      max-width var(--duration-move) var(--ease-smooth),
+      opacity 400ms var(--ease-smooth),
+      padding var(--duration-move) var(--ease-smooth);
+  }
+
+  .focus-help[aria-expanded='true'] .focus-help__text {
+    @apply pr-6 opacity-100;
+    max-width: 560px;
+    transition-delay: 0ms, 150ms, 0ms;
+  }
+
+  .focus-close {
+    @apply flex size-12 shrink-0 items-center justify-center rounded-full bg-bg text-text;
+    transition: background-color 300ms var(--ease-smooth);
   }
 
   @keyframes fade-in {
@@ -208,26 +267,62 @@
   /* ===== Indicator wheel ================================================= */
   /* A new wheel rises in from below; the old one drifts up and fades (INT-07). */
   .wheel-in {
-    animation: wheel-in var(--duration-move) var(--ease-smooth) both;
+    animation: wheel-in-from-below var(--duration-move) var(--ease-smooth) both;
   }
 
   .wheel-out {
-    animation: wheel-out 600ms var(--ease-smooth) both;
+    animation: wheel-out-upwards 700ms var(--ease-smooth) both;
     pointer-events: none;
   }
 
-  @keyframes wheel-in {
+  /* Going back to an earlier indicator: the motion runs the other way. */
+  .wheel-in[data-dir='up'] {
+    animation-name: wheel-in-from-above;
+  }
+
+  .wheel-out[data-dir='up'] {
+    animation-name: wheel-out-downwards;
+  }
+
+  @keyframes wheel-in-from-below {
     from {
       opacity: 0;
-      transform: translateY(96px);
+      transform: translateY(72px);
     }
   }
 
-  @keyframes wheel-out {
+  @keyframes wheel-in-from-above {
+    from {
+      opacity: 0;
+      transform: translateY(-72px);
+    }
+  }
+
+  @keyframes wheel-out-upwards {
     to {
       opacity: 0;
-      transform: translateY(-48px);
+      transform: translateY(-56px);
     }
+  }
+
+  @keyframes wheel-out-downwards {
+    to {
+      opacity: 0;
+      transform: translateY(56px);
+    }
+  }
+
+  /* Mapped themes on the ring can be clicked to turn them to the bottom. */
+  .wheel-segment--clickable {
+    cursor: pointer;
+  }
+
+  .wheel-segment > path:first-child {
+    transition: opacity 300ms var(--ease-smooth);
+  }
+
+  .wheel-segment--clickable:hover > path:first-child {
+    opacity: 1;
   }
 
   .wheel-band {
@@ -242,7 +337,7 @@
   }
 
   .wheel-arrow {
-    @apply absolute flex size-12 items-center justify-center rounded-full bg-bg-tertiary text-white hover:scale-105 active:scale-95;
+    @apply absolute flex size-12 items-center justify-center rounded-full text-text-muted hover:scale-110 hover:text-text active:scale-95;
     transition: transform 300ms var(--ease-smooth), opacity 300ms var(--ease-smooth);
   }
 }
