@@ -4,7 +4,8 @@
 // Figma (Landing page-the vision-scroll, node 1541:64881) in px inside the
 // scene box. The box scales as a whole, so the composition never reflows.
 //
-// Slots are listed in Figma layer order: later slots sit on top.
+// Slots are listed in drawing order: later slots sit on top (and win hover where
+// rectangles overlap). Mostly Figma layer order, except where noted.
 // `halo` is the yellow circle behind an illustration when it is selected.
 // `depth` (-1 to 1) sets the scroll parallax: positive drifts up faster than the page,
 // negative lags behind. Keep values small; the largest move is PARALLAX_PX in Scene.jsx.
@@ -35,7 +36,9 @@ export const scenes = [
           [276, 281], [149, 271], [23, 271], [0, 240], [0, 109],
         ],
       },
-      // Figma "Component 4". Halo from the selected frame (1541:66189), scaled from 560px.
+      // Figma "Component 5". Halo not designed yet: centred on the drawn content.
+      { indicator: 4, depth: 0.3, x: 157.18, y: 343.93, width: 394.12, height: 283.23, halo: { x: 198.5, y: 332.5, size: 311 } },
+      // Figma "Component 4". Drawn above indicator 4 (designer's request). Halo from the selected frame (1541:66189), scaled from 560px.
       // Priority area: the repair workshop doorway, marked up by the designer.
       {
         indicator: 3,
@@ -47,8 +50,6 @@ export const scenes = [
         halo: { x: 0, y: 274.3, size: 297 },
         priorityArea: [[3, 296], [238, 306], [230, 534], [210, 554], [0, 551], [0, 311]],
       },
-      // Figma "Component 5". Halo not designed yet: centred on the drawn content.
-      { indicator: 4, depth: 0.3, x: 157.18, y: 343.93, width: 394.12, height: 283.23, halo: { x: 198.5, y: 332.5, size: 311 } },
       // Figma "Component 6". Halo not designed yet: centred estimate.
       // Priority area: the children playing by the planters, marked up by the designer.
       {
