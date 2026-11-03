@@ -1,0 +1,81 @@
+/* ==========================================================================
+   Design tokens — the ONE place to change colours, fonts and type sizes.
+   Source: Figma "Oxfordshire Future Streets" › Style-guide (node 1538:61702)
+   and build spec §3.
+
+   Tailwind turns every token below into a CSS variable and a utility class,
+   e.g. --color-red-1 → var(--color-red-1), .text-red-1, .bg-red-1.
+   `static` keeps every variable in the output, even ones only used from
+   JavaScript (the indicator wheel reads the theme colours this way).
+   ========================================================================== */
+
+@theme static {
+  /* ---- Core palette ---------------------------------------------------- */
+  --color-red-1: #f68991;
+  --color-red-2: #d47178;
+  --color-red-3: #c85159;
+  --color-green-1: #9fc9bf;
+  --color-green-2: #6cb0af;
+  --color-green-3: #487e83;
+  --color-highlight-strong: #ffc654; /* Yellow-highlight-dark */
+  --color-highlight-soft: #ffebb5; /* Yellow-highlight-light */
+
+  --color-text: #28140b; /* Text-primary */
+  --color-text-muted: #604336; /* Text-secondary: nav links, hero prompt */
+  --color-label-muted: #898583; /* wheel labels on unmapped themes */
+  --color-outline-pink: #f2949a; /* hero callout outlines */
+
+  --color-bg: #f9efe9; /* Background-primary */
+  --color-bg-alt: #fce9cc; /* Background-secondary: hover labels */
+  --color-bg-tertiary: #f5dac1; /* Background-tertiary: wheel arrows, close button */
+
+  /* ---- Theme colours (spec §3.1.1) --------------------------------------
+     -bg: solid fills with white text · -text: text on light backgrounds.
+     Keys match the theme keys in src/data/indicators.json. */
+  --color-theme-social-connection-bg: #8878c9;
+  --color-theme-social-connection-text: #624fa7;
+  --color-theme-freedom-to-move-bg: #2b8dbd;
+  --color-theme-freedom-to-move-text: #146086;
+  --color-theme-living-with-nature-bg: #429362;
+  --color-theme-living-with-nature-text: #236b3f;
+  --color-theme-healthy-lives-bg: #e56161;
+  --color-theme-healthy-lives-text: #c85159;
+  --color-theme-economic-vitality-bg: #ba6c86;
+  --color-theme-economic-vitality-text: #89324f;
+  --color-theme-community-agency-bg: #c98553;
+  --color-theme-community-agency-text: #915122;
+
+  /* ---- Fonts ----------------------------------------------------------- */
+  --font-display: 'Rubik Doodle Shadow', 'Rubik', system-ui, sans-serif;
+  --font-heading: 'Rubik', system-ui, sans-serif;
+  --font-body: 'Manrope', system-ui, sans-serif;
+
+  /* ---- Type scale (desktop; spec §3.2) ---------------------------------- */
+  --text-h1-home: 84px;
+  --text-h1-home--line-height: 96px;
+  --text-h1-home--letter-spacing: 1.68px;
+  --text-h1: 72px;
+  --text-h1--line-height: 84px;
+  --text-h2: 48px;
+  --text-h2--line-height: 60px;
+  --text-h3: 32px;
+  --text-h3--line-height: 42px;
+  --text-h4: 24px;
+  --text-h4--line-height: 36px;
+  --text-body: 18px;
+  --text-body--line-height: 27px;
+  --text-nav: 16px;
+  --text-nav--line-height: 24px;
+
+  /* ---- Motion ----------------------------------------------------------- */
+  /* One soft ease-out for everything: fast start, long gentle settle. */
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fade: 700ms; /* hover fades, halos */
+  --duration-move: 900ms; /* layout moves, wheel swaps */
+  --duration-entrance: 1400ms; /* hero entrance */
+  --duration-slow-fade: 2200ms; /* scene descriptions */
+
+  /* ---- Layout ----------------------------------------------------------- */
+  --container-content: 1200px;
+  --container-column: 640px; /* hero and scene column */
+}
