@@ -1,9 +1,9 @@
 // IndicatorWheel (spec §7.1, INT-05/06)
 //
 // Draws one indicator's wheel from indicators.json: 6 theme segments around
-// the ring, mapped themes in solid colour, and the active theme's strong
+// the ring, mapped themes in solid colour, and the active theme's ticked
 // factors fanned out below it. Arrows rotate to the previous/next mapped theme;
-// past the ends they call onPrev / onNext to change indicator.
+// once every theme has been shown they call onPrev / onNext to change indicator.
 //
 // Geometry is measured from the Figma wheel (node 1541:65698), where the ring's
 // outer radius is 252.4px. RING_RADIUS sets the size: everything placed around
@@ -28,8 +28,9 @@ const BAND = {
 const SLICE = 60;
 const GAP = 8; // px between neighbouring segments
 const OUTER_ARC = { firstRadius: RING_RADIUS + 9.4, step: 12.5, width: 6.6, max: 3 };
-// Arrows sit just outside the lower ring, clear of the factor bands.
-const ARROW = { dx: RING_RADIUS * 0.864 + 25, dy: RING_RADIUS * 0.965, size: 48 };
+// Arrows sit just beside the selected theme at the bottom of the ring, level with
+// where its factor bands start (centre of each button, from the wheel's centre).
+const ARROW = { dx: RING_RADIUS * 0.75, dy: RING_RADIUS * 0.988, size: 48 };
 // Indicator text fits inside the ring's hole.
 const CENTRE_TEXT_WIDTH = Math.round((RING.inner - 22) * 2 * 0.72); // narrow enough that the column corners clear the ring
 // The illustration and text share a column that stays inside the ring's hole.
@@ -39,6 +40,7 @@ const CENTRE_HEIGHT = Math.round(RING.inner * 1.34); // kept short so its corner
 const CENTRE_ILLUSTRATION_MAX_HEIGHT = 150;
 const CENTRE_ILLUSTRATION_MAX_WIDTH = 210;
 const ROTATE_MS = 1100;
+const SETTLE_BANDS_DELAY_MS = 550; // a new wheel's factors come out once it has (nearly) settled
 const easeOutQuart = (t) => 1 - (1 - t) ** 4;
 
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -85,22 +87,24 @@ function textArc(r, centre, span, upright) {
 
 const isLowerHalf = (deg) => norm(deg) > 90 && norm(deg) < 270;
 
-// Shrink long factor labels so they fit their band.
+// Shrink long factor labels so they fit their band (returned in rem).
 function factorFontSize(text, radius, span) {
   const available = rad(span) * radius - 28;
   const estimated = text.length * 7.4; // Manrope 500 at 14px ≈ 7.4px per character
-  return Math.max(10.5, Math.min(14, (14 * available) / estimated));
+  const px = Math.max(10.5, Math.min(14, (14 * available) / estimated));
+  return `${px / 16}rem`;
 }
 
 // ----- Component -------------------------------------------------------------
-export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, onNext, hasPrev, hasNext }) {
+// settleFrom (optional, degrees): the wheel appears turned this far from its resting angle,
+// eases into place, and only then fans out its factors, hinting that the wheel turns.
+export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, hasNext, settleFrom = 0 }) {
   const uid = useId().replace(/:/g, '');
 
-  // Strong factors grouped by theme, in ring order starting from the bottom.
+  // Ticked factors grouped by theme, in ring order starting from the bottom.
   const mapped = useMemo(() => {
     const byTheme = new Map();
     for (const m of indicator.mappings) {
-      if (m.strength !== 'strong') continue;
       if (!byTheme.has(m.theme)) byTheme.set(m.theme, []);
       byTheme.get(m.theme).push(m);
     }
@@ -109,27 +113,51 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
       .map((t) => ({ ...t, factors: byTheme.get(t.key) }));
   }, [indicator]);
 
-  const [activeIndex, setActiveIndex] = useState(startAt === 'last' ? mapped.length - 1 : 0);
+  // Opens on the theme with the most ticked factors (on a tie, the first in ring order).
+  const [startIndex] = useState(() =>
+    mapped.reduce((best, theme, i) => (theme.factors.length > mapped[best].factors.length ? i : best), 0),
+  );
+  // Steps taken round the ring from the starting theme: forwards up to count - 1,
+  // backwards down to -(count - 1).
+  const [step, setStep] = useState(0);
+  const count = mapped.length;
+  // Forward steps go clockwise round the ring: to the theme on the right of the bottom.
+  const activeIndex = (((startIndex - step) % count) + count) % count;
+  const setActiveIndex = (i) => {
+    turnRef.current = null; // shortest way
+    settlingRef.current = false;
+    setStep((startIndex - i + count) % count);
+  };
   const active = mapped[activeIndex];
 
   // Ring rotation: the active theme sits at the bottom (180°).
-  const [rotation, setRotation] = useState(180 - active.angle);
+  const [rotation, setRotation] = useState(180 - active.angle - settleFrom);
   const rotationRef = useRef(rotation);
+  const showRotation = (value) => {
+    rotationRef.current = value;
+    setRotation(value);
+  };
+  // Which way to turn: 'next' turns the wheel clockwise (its bottom moves left), 'prev'
+  // anticlockwise (bottom moves right); null (the settle, theme clicks) turns the shortest way.
+  const turnRef = useRef(null);
+  // The opening theme's factors wait for the settle; later themes' factors come out straight away.
+  const settlingRef = useRef(settleFrom !== 0);
   useEffect(() => {
     const from = rotationRef.current;
-    const delta = norm(180 - active.angle - from + 180) - 180; // shortest way round
+    const ahead = norm(180 - active.angle - from); // clockwise distance to the target, 0–360
+    const direction = turnRef.current;
+    const delta =
+      ahead === 0 ? 0 : direction === 'next' ? ahead : direction === 'prev' ? ahead - 360 : norm(ahead + 180) - 180;
     const to = from + delta;
     if (reduceMotion() || delta === 0) {
-      rotationRef.current = to;
-      setRotation(to);
+      showRotation(to);
       return;
     }
     let frame;
     const start = performance.now();
     const tick = (now) => {
       const t = Math.min(1, (now - start) / ROTATE_MS);
-      rotationRef.current = from + delta * easeOutQuart(t);
-      setRotation(rotationRef.current);
+      showRotation(from + delta * easeOutQuart(t));
       if (t < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -143,18 +171,28 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
   const expanded = expandAll ? mapped : [active];
   const isExpanded = (key) => expanded.some((t) => t.key === key);
 
-  // Rotating mode: the arrows only turn the wheel, looping round the mapped themes.
-  // Changing indicator is done by scrolling over the wheel's pane (FocusView) or ↑/↓.
-  // Expanded mode has nothing to rotate, so there the arrows change indicator.
-  const count = mapped.length;
-  const prevIndex = (activeIndex - 1 + count) % count;
-  const nextIndex = (activeIndex + 1) % count;
-  const goPrev = () => (expandAll ? onPrev?.() : setActiveIndex(prevIndex));
-  const goNext = () => (expandAll ? onNext?.() : setActiveIndex(nextIndex));
-  const prevLabel = expandAll ? 'Previous indicator' : `Rotate to ${mapped[prevIndex].label.join(' ')}`;
-  const nextLabel = expandAll ? 'Next indicator' : `Rotate to ${mapped[nextIndex].label.join(' ')}`;
-  const prevDisabled = expandAll ? !hasPrev : count < 2;
-  const nextDisabled = expandAll ? !hasNext : count < 2;
+  // Rotating mode: either arrow turns the wheel one theme at a time, all the way round
+  // from the starting theme in its direction; one more click then moves on to the next
+  // (right) or previous (left) indicator.
+  // Expanded mode has nothing to rotate, so there the arrows change indicator straight away.
+  const atFirst = expandAll || step === -(count - 1);
+  const atLast = expandAll || step === count - 1;
+  const goPrev = () => {
+    if (atFirst) return onPrev?.();
+    turnRef.current = 'prev';
+    settlingRef.current = false;
+    setStep(step - 1);
+  };
+  const goNext = () => {
+    if (atLast) return onNext?.();
+    turnRef.current = 'next';
+    settlingRef.current = false;
+    setStep(step + 1);
+  };
+  const prevLabel = atFirst ? 'Previous indicator' : `Rotate to ${mapped[(activeIndex + 1) % count].label.join(' ')}`;
+  const nextLabel = atLast ? 'Next indicator' : `Rotate to ${mapped[(activeIndex - 1 + count) % count].label.join(' ')}`;
+  const prevDisabled = atFirst && !hasPrev;
+  const nextDisabled = atLast && !hasNext;
 
   // In expand-all mode the wheel can outgrow its 600px box; scale it to fit.
   const mostFactors = Math.max(...expanded.map((t) => t.factors.length));
@@ -213,14 +251,18 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
                 opacity={isMapped ? 0.9 : 0.15}
               />
 
-              {/* Outer arcs: one per strong factor, on mapped themes that aren't active. */}
+              {/* Outer arcs: one per ticked factor, on mapped themes that aren't active. While a
+                  new wheel settles, its opening theme shows them too, then they give way to the
+                  factor bands, so the lines read as collapsed factors. */}
               {isMapped &&
-                !isActive &&
+                (!isActive || settlingRef.current) &&
                 themeMapping.factors.slice(0, OUTER_ARC.max).map((_, i) => {
                   const r = OUTER_ARC.firstRadius + i * OUTER_ARC.step;
                   return (
                     <path
                       key={i}
+                      className={isActive ? 'wheel-arc--handoff' : undefined}
+                      style={isActive ? { animationDelay: `${SETTLE_BANDS_DELAY_MS}ms` } : undefined}
                       d={textArc(r, centre, sliceSpan(r, OUTER_ARC.width / 2), true)}
                       fill="none"
                       stroke={themeBg(theme.key)}
@@ -238,7 +280,7 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
                     <path id={id} d={textArc(radii[i], centre, 120, upright)} fill="none" />
                     <text
                       className="font-body"
-                      fontSize={isActive ? 15 : 16}
+                      fontSize={isActive ? '0.9375rem' : '1rem'}
                       fontWeight={isMapped ? 600 : 700}
                       fill={isMapped ? '#fff' : 'var(--color-label-muted)'}
                       dominantBaseline="central"
@@ -267,7 +309,7 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
                 const id = `${uid}-band-${theme.key}-${i}`;
                 const name = factorName(indicator, factor);
                 return (
-                  <g key={factor.factor} style={{ animationDelay: `${250 + i * 140}ms` }} className="wheel-band">
+                  <g key={factor.factor} style={{ animationDelay: `${(settlingRef.current ? SETTLE_BANDS_DELAY_MS : 250) + i * 140}ms` }} className="wheel-band">
                     <path
                       d={sectorPath(inner, outer, centre, BAND.corner)}
                       fill={themeBg(theme.key)}
@@ -313,7 +355,7 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
             />
           </div>
         )}
-        <p className="shrink-0 text-[17px] leading-[1.3] font-semibold text-text">{indicator.text}</p>
+        <p className="shrink-0 text-[1.0625rem] leading-[1.3] font-semibold text-text">{indicator.text}</p>
       </div>
 
       {/* ----- Arrows ----- */}
@@ -325,7 +367,7 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
         disabled={prevDisabled}
         aria-label={prevLabel}
       >
-        <RotateIcon direction="left" />
+        <TriangleIcon direction="left" />
       </button>
       <button
         type="button"
@@ -335,7 +377,7 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
         disabled={nextDisabled}
         aria-label={nextLabel}
       >
-        <RotateIcon direction="right" />
+        <TriangleIcon direction="right" />
       </button>
       </div>
 
@@ -362,23 +404,17 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
 
 const factorName = (indicator, mapping) => FACTOR_LABELS[mapping.factor] ?? mapping.factorName;
 
-// Solid rotate arrow: a filled arrowhead on a thick curved body that tapers to a
-// point. Flipped vertically and turned 60° inwards; the left button is the mirror of the right.
-function RotateIcon({ direction }) {
+// Solid triangle arrow with softly rounded corners (a round-joined stroke over the fill).
+function TriangleIcon({ direction }) {
   return (
-    <svg viewBox="0 0 32 32" className="size-8" aria-hidden="true">
+    <svg viewBox="0 0 24 24" className="size-7" aria-hidden="true">
       <path
-        d="M19 3.5L30 13.5L19 23.5V18C12.4 18 7.2 20.6 3 27C3.8 16.2 10.4 9 19 9Z"
+        d="M9 5.5L18 12L9 18.5Z"
         fill="currentColor"
         stroke="currentColor"
-        strokeWidth="1.2"
+        strokeWidth="3"
         strokeLinejoin="round"
-        // Flipped vertically, then turned 60° inwards (right: anticlockwise; left: clockwise, as its mirror).
-        transform={
-          direction === 'left'
-            ? 'rotate(60 16 16) translate(32 32) scale(-1 -1)'
-            : 'rotate(-60 16 16) translate(0 32) scale(1 -1)'
-        }
+        transform={direction === 'left' ? 'translate(24 0) scale(-1 1)' : undefined}
       />
     </svg>
   );

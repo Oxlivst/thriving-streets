@@ -1,65 +1,134 @@
 // FocusView (spec §7.1, INT-04/06/07/08)
 //
 // A fixed layer under the top nav, shown while an indicator is selected.
-// Layout from the Figma frame "Landing page-the vision-selected" (1440px):
-//   left  — all scenes at 560px, column centred 323px left of the page centre;
-//           this pane scrolls, the page behind does not
-//   right — the wheel, fixed; its pane scrolls only if the window is too short
-//   close — × button, top right; Esc does the same
+// Layout: a 6-column grid (24px gutters), at most 1200px wide.
+//   columns 1–3 — the scenes
+//   columns 4–6 — the wheel, with help (?) at its left and close (×) at its right
+// Both halves scale with the grid down to 960px. Narrower than that, the wheel
+// takes the full width and the scenes move into a side drawer.
+//
+// Scrolling works like a scrollytelling page: the view scrolls natively (no scroll
+// hijacking). Each indicator owns STEP_PX of scroll; while its scene's indicators are
+// stepped through, the scene and the wheel stay put (sticky), and the indicator whose
+// step is current is selected. The wheel crossfades between indicators. Clicks,
+// arrows and ↑ / ↓ scroll smoothly to the chosen indicator's step. Each step is also a
+// native scroll-snap point with `scroll-snap-stop: always`, so one trackpad stroke
+// settles on the next indicator instead of flying past several (the browser still scrolls).
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { scenes } from '../config/scenes.js';
+import { scenes, SCENE_BOX } from '../config/scenes.js';
 import Scene from './Scene.jsx';
 import IndicatorWheel, { RING_RADIUS } from './IndicatorWheel.jsx';
 import { WHEEL_EXPAND_ALL } from '../config/themes.js';
+import useWidth from '../hooks/useWidth.js';
 
-// Vertical layout of the focus view, in px from the top of the window (1440 frame):
-// the helper pill and × sit in a row centred at HEADER_CENTRE_Y, and the scene title
-// lines up with that row when the scenes are scrolled to the top (the default).
+// Vertical layout, in px from the top of the window: the scene title and the
+// ? / × buttons share a centre line at HEADER_CENTRE_Y, and the wheel's ring
+// starts on that line.
 const NAV_HEIGHT = 60;
-const HEADER_CENTRE_Y = 125; // design: 195, moved up 70px
+const HEADER_CENTRE_Y = 125;
 const HEADER_HEIGHT = 48;
 export const FOCUS_TITLE_TOP = HEADER_CENTRE_Y - 13.5; // scene title (27px line) centred on the row
-// The ring's top edge sits on the header row's centre line (through the scene title
-// and the ? / × buttons), the same for every indicator. Outer arcs, when the theme
-// at the top has any, sit just above it in the empty space left of the buttons.
-const RING_CENTRE_Y = HEADER_CENTRE_Y + RING_RADIUS;
-const SCENE_SCALE = 0.75; // 640px → 480px (Figma: 0.875 → 560px)
-const COLUMN_SHIFT = 323; // column centre: page centre − 323px
-const WHEEL_LEFT = 38; // wheel box: page centre + 38px
-const PANE_PAD = 48; // extra room on the wheel pane's left so the (wider) pill row isn't clipped
-const WHEEL_TOP = RING_CENTRE_Y - NAV_HEIGHT - 300; // the wheel box is 600px with its centre at 300
-const HINT = WHEEL_EXPAND_ALL
-  ? 'Use the arrows to move between indicators'
-  : 'Rotate the wheel to explore the enabling factors for the experience';
-const SWAP_MS = 900; // matches --duration-move
-const WHEEL_STEP_PX = 70; // scroll distance that switches indicator
+const STICKY_TOP = FOCUS_TITLE_TOP - NAV_HEIGHT; // where a scene holds still, inside this view
+
+const GRID_MAX = 1200; // the two halves together
+const GRID_GUTTER = 24;
+const DRAWER_BELOW = 960; // narrower than this, the scenes go into a drawer
+const WHEEL_BOX = { width: 600, height: 700 }; // IndicatorWheel's own coordinate box (centre at 300, 300)
+const WHEEL_DRAWN_HEIGHT = 640; // ring top to the bottom of a third factor band, at scale 1
+const DRAWER_MAX = 480;
+// Beside the wheel, the scene is drawn at 80% of its column (left-aligned), so the
+// illustration is a touch narrower than the wheel's ring, as in Figma (node 1541:65628).
+const SCENE_FIT = 0.8;
+
+const STEP_PX = 480; // scroll distance per indicator (the BBC example uses about this)
+// A new wheel appears this far off its resting angle and eases into place before its
+// factors come out (a hint that the wheel turns).
+const SETTLE_DEG = 14;
+const FADE_MS = 600; // wheel crossfade (the longer of the in / out animations)
+const SMOOTH_SCROLL_MAX_MS = 1500; // a programmatic smooth scroll is assumed done after this
+
+// Each scene's indicators, in the order scrolling steps through them.
+const SCENE_STEPS = scenes.map((scene) => ({
+  scene,
+  indicators: scene.slots.map((slot) => slot.indicator).sort((a, b) => a - b),
+}));
 
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export default function FocusView({ indicatorsByNumber, selected, startAt, hovered, onHover, onSelect, onPrev, onNext, onClose }) {
-  const dialogRef = useRef(null);
-  const leftPane = useRef(null);
-  const rightPane = useRef(null);
-  const sceneRefs = useRef(new Map());
-  const [closing, setClosing] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false); // help pill starts collapsed each time
+function useNarrow() {
+  const query = `(max-width: ${DRAWER_BELOW - 0.02}px)`;
+  const [narrow, setNarrow] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setNarrow(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [query]);
+  return narrow;
+}
 
-  // Wheels on stage: the current one, plus the previous one while it leaves.
-  const [wheels, setWheels] = useState([{ number: selected, startAt, key: `${selected}`, state: 'in' }]);
+export default function FocusView({ indicatorsByNumber, selected, hovered, onHover, onSelect, onPrev, onNext, onClose }) {
+  const dialogRef = useRef(null);
+  const scroller = useRef(null);
+  const drawerPane = useRef(null);
+  const blockRefs = useRef(new Map()); // scene id → its block in the scroll track
+  const drawerSceneRefs = useRef(new Map());
+  const [closing, setClosing] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false); // tapped open (touch); hover and focus open it via CSS
+  const narrow = useNarrow();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Scale the scenes and the wheel to the room they actually have.
+  const [measureScroller, , paneHeight] = useWidth();
+  const [measureScenes, sceneColumnWidth] = useWidth();
+  const [measureDrawer, drawerWidth] = useWidth();
+  const [measureWheel, wheelColumnWidth] = useWidth();
+  const scrollerRef = useCallback(
+    (el) => {
+      scroller.current = el;
+      measureScroller(el);
+    },
+    [measureScroller],
+  );
+  const drawerRef = useCallback(
+    (el) => {
+      drawerPane.current = el;
+      measureDrawer(el);
+    },
+    [measureDrawer],
+  );
+  const sceneScale = sceneColumnWidth ? Math.min(1, (sceneColumnWidth * SCENE_FIT) / SCENE_BOX.width) : 0.75;
+  const drawerSceneScale = drawerWidth ? Math.min(1, (drawerWidth - 48) / SCENE_BOX.width) : 0.6;
+  const sceneHeight = 27 + 24 + SCENE_BOX.height * sceneScale; // title, gap, illustration
+  // The wheel fits its column's width, and the window's height (it no longer scrolls on its own).
+  const wheelRoom = paneHeight - (HEADER_CENTRE_Y - NAV_HEIGHT) - 16;
+  const wheelScale = Math.min(
+    1,
+    wheelColumnWidth ? wheelColumnWidth / WHEEL_BOX.width : 1,
+    paneHeight ? wheelRoom / WHEEL_DRAWN_HEIGHT : 1,
+  );
+  const ringCentreY = HEADER_CENTRE_Y + RING_RADIUS * wheelScale;
+  const wheelTop = ringCentreY - NAV_HEIGHT - (WHEEL_BOX.height / 2 - 50) * wheelScale; // box centre is 300 of 700
+  const hintMaxWidth = Math.max(160, wheelColumnWidth - HEADER_HEIGHT * 2 - 16);
+  const stickyTop = narrow ? 0 : STICKY_TOP;
+
+  // Wheels on stage: the current one, plus the previous one while it fades out.
+  // Moving on (scrolling down), the new wheel rises in and the old one drifts up; back: the reverse.
+  const [wheels, setWheels] = useState([{ number: selected, key: `${selected}`, state: 'in', dir: 'down' }]);
   useEffect(() => {
     setWheels((prev) => {
       if (prev.at(-1)?.number === selected) return prev;
+      const dir = selected > prev.at(-1).number ? 'down' : 'up';
       return [
-        // Moving forward: the new wheel rises from below and the old one leaves upwards; back: the reverse.
-        ...prev.filter((w) => w.state === 'in').map((w) => ({ ...w, state: 'out', dir: selected > prev.at(-1).number ? 'down' : 'up' })),
-        { number: selected, startAt, key: `${selected}-${Date.now()}`, state: 'in', dir: selected > prev.at(-1).number ? 'down' : 'up' },
+        ...prev.filter((w) => w.state === 'in').map((w) => ({ ...w, state: 'out', dir })),
+        { number: selected, key: `${selected}-${Date.now()}`, state: 'in', dir },
       ];
     });
-    const t = setTimeout(() => setWheels((prev) => prev.filter((w) => w.state === 'in')), SWAP_MS);
+    const t = setTimeout(() => setWheels((prev) => prev.filter((w) => w.state === 'in')), FADE_MS);
     return () => clearTimeout(t);
-  }, [selected, startAt]);
+  }, [selected]);
 
   // Freeze the page behind; keep the nav shown (this view starts right below it); focus the dialog.
   useEffect(() => {
@@ -78,54 +147,72 @@ export default function FocusView({ indicatorsByNumber, selected, startAt, hover
     };
   }, []);
 
-  // Keep the selected indicator's scene in view in the left pane:
-  // instantly on open, smoothly when the selection moves to another scene.
+  // Scroll position of each indicator's step: where its scene's block reaches the
+  // sticky line, plus one STEP_PX per indicator before it in that scene.
+  const stepPositions = useCallback(() => {
+    const box = scroller.current;
+    const origin = box.getBoundingClientRect().top - box.scrollTop;
+    return SCENE_STEPS.flatMap(({ scene, indicators }) => {
+      const block = blockRefs.current.get(scene.id);
+      if (!block) return [];
+      const top = block.getBoundingClientRect().top - origin - stickyTop;
+      return indicators.map((number, i) => ({ number, at: top + i * STEP_PX }));
+    });
+  }, [stickyTop]);
+
+  // Scrolling selects the indicator whose step is current (past the halfway mark).
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+  const fromScroll = useRef(null); // a selection the scroll position made (needs no scrolling)
+  const programmatic = useRef(0); // until when a smooth scroll we started is still running
+  useEffect(() => {
+    const box = scroller.current;
+    const onScroll = () => {
+      if (performance.now() < programmatic.current) return;
+      const y = box.scrollTop;
+      let current = null;
+      for (const step of stepPositions()) if (current === null || step.at <= y + STEP_PX / 2) current = step.number;
+      if (current !== null && current !== selectedRef.current) {
+        fromScroll.current = current;
+        onSelectRef.current(current);
+      }
+    };
+    const onScrollEnd = () => {
+      programmatic.current = 0;
+    };
+    box.addEventListener('scroll', onScroll, { passive: true });
+    box.addEventListener('scrollend', onScrollEnd);
+    return () => {
+      box.removeEventListener('scroll', onScroll);
+      box.removeEventListener('scrollend', onScrollEnd);
+    };
+  }, [stepPositions]);
+
+  // A selection made any other way (click, arrows, keys, opening): scroll to its step,
+  // instantly on open, smoothly afterwards.
   const firstScroll = useRef(true);
+  useLayoutEffect(() => {
+    if (fromScroll.current === selected) {
+      fromScroll.current = null;
+      return;
+    }
+    const step = stepPositions().find((s) => s.number === selected);
+    if (!step) return;
+    const instant = firstScroll.current || reduceMotion();
+    firstScroll.current = false;
+    if (!instant) programmatic.current = performance.now() + SMOOTH_SCROLL_MAX_MS;
+    scroller.current.scrollTo({ top: step.at, behavior: instant ? 'instant' : 'smooth' });
+  }, [selected, narrow, stepPositions]);
+
+  // In the drawer, keep the selected indicator's scene in view.
   const activeScene = scenes.find((s) => s.slots.some((slot) => slot.indicator === selected));
   useLayoutEffect(() => {
-    const el = sceneRefs.current.get(activeScene?.id);
-    if (!el) return;
-    const top = el.offsetTop - (FOCUS_TITLE_TOP - NAV_HEIGHT);
-    leftPane.current.scrollTo({ top, behavior: firstScroll.current || reduceMotion() ? 'instant' : 'smooth' });
-    firstScroll.current = false;
-  }, [activeScene]);
-
-  // Scrolling over the wheel's pane moves to the previous / next indicator: one step per
-  // gesture (a trackpad's momentum doesn't skip ahead).
-  const stepRef = useRef({ onPrev, onNext });
-  stepRef.current = { onPrev, onNext };
-  useEffect(() => {
-    const pane = rightPane.current;
-    let total = 0;
-    let lastEvent = 0;
-    let lockedUntil = 0;
-    const onWheel = (e) => {
-      // If part of the drawn wheel is out of view (short windows), scroll the pane first;
-      // only switch indicator once the wheel is fully in view in that direction.
-      const down = e.deltaY > 0;
-      const wheel = [...pane.querySelectorAll('[aria-roledescription="indicator wheel"]')].pop();
-      const svg = wheel?.querySelector(':scope > div > svg'); // the wheel drawing (not the arrow icons)
-      const drawnBottom = svg ? svg.getBoundingClientRect().top + 300 + svg.getBBox().y + svg.getBBox().height : 0;
-      const canScrollPane = down ? drawnBottom > pane.getBoundingClientRect().bottom + 1 : pane.scrollTop > 0;
-      if (canScrollPane) return;
-      e.preventDefault();
-      const now = performance.now();
-      if (now - lastEvent > 250) total = 0; // a new gesture
-      lastEvent = now;
-      if (now < lockedUntil) {
-        lockedUntil = Math.max(lockedUntil, now + 250); // still the same gesture's momentum
-        return;
-      }
-      total += e.deltaY;
-      if (Math.abs(total) < WHEEL_STEP_PX) return;
-      const step = total > 0 ? stepRef.current.onNext : stepRef.current.onPrev;
-      total = 0;
-      lockedUntil = now + SWAP_MS; // let the swap finish before the next one
-      step?.();
-    };
-    pane.addEventListener('wheel', onWheel, { passive: false });
-    return () => pane.removeEventListener('wheel', onWheel);
-  }, []);
+    const el = drawerSceneRefs.current.get(activeScene?.id);
+    if (!narrow || !el || !drawerPane.current) return;
+    drawerPane.current.scrollTo({ top: el.offsetTop - 24, behavior: 'instant' });
+  }, [activeScene, narrow]);
 
   const requestClose = () => {
     if (closing) return;
@@ -134,11 +221,25 @@ export default function FocusView({ indicatorsByNumber, selected, startAt, hover
     setTimeout(onClose, 450);
   };
 
+  // Esc closes the drawer first (when open), then the focus view.
   useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && requestClose();
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      if (narrow && drawerOpen) setDrawerOpen(false);
+      else requestClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
+
+  const sceneProps = {
+    indicatorsByNumber,
+    selected,
+    hovered,
+    onHover,
+    onSelect,
+    onDismiss: requestClose,
+  };
 
   return createPortal(
     <div
@@ -150,98 +251,190 @@ export default function FocusView({ indicatorsByNumber, selected, startAt, hover
       aria-label={indicatorsByNumber.get(selected).text}
       tabIndex={-1}
     >
-      {/* ----- Left: scenes (scrolls) ----- */}
+      {/* ----- Below 960px: the scenes live in a side drawer (it scrolls on its own) ----- */}
+      {narrow && (
+        <>
+          <div className={`focus-drawer ${drawerOpen ? 'focus-drawer--open' : ''}`} style={{ width: `min(${DRAWER_MAX}px, 85vw)` }}>
+            <div ref={drawerRef} id="focus-scenes-drawer" className="h-full overflow-x-hidden overflow-y-auto overscroll-contain">
+              <div className="flex flex-col px-6 pt-6 pb-[60vh]" style={{ gap: 72 * drawerSceneScale }}>
+                {scenes.map((scene) => (
+                  <div key={scene.id} ref={(el) => drawerSceneRefs.current.set(scene.id, el)}>
+                    <Scene scene={scene} scale={drawerSceneScale} {...sceneProps} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="focus-drawer__tab"
+              aria-expanded={drawerOpen}
+              aria-controls="focus-scenes-drawer"
+              onClick={() => setDrawerOpen((open) => !open)}
+            >
+              <span>{drawerOpen ? 'Hide scenes' : 'Scenes'}</span>
+              <svg viewBox="0 0 24 24" className={`size-4 transition-transform ${drawerOpen ? 'rotate-180' : ''}`} aria-hidden="true">
+                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+          {drawerOpen && <div className="focus-drawer__scrim" onClick={() => setDrawerOpen(false)} aria-hidden="true" />}
+        </>
+      )}
+
+      {/* ----- The view's one scroll ----- */}
+      {/* No scroll anchoring: with sticky content it would nudge the scroll position on every
+          re-render, which here selects the next indicator, and so on. */}
       <div
-        ref={leftPane}
-        className="absolute inset-y-0 left-0 overflow-y-auto overscroll-contain"
-        style={{ width: `calc(50% + ${WHEEL_LEFT}px)` }}
+        ref={scrollerRef}
+        className="focus-scroller absolute inset-0 overflow-x-hidden overflow-y-auto overscroll-contain [overflow-anchor:none]"
+        style={{ scrollPaddingTop: stickyTop }}
       >
+        {/* The 6-column grid */}
         <div
-          className="focus-scenes flex flex-col"
+          className="mx-auto grid grid-cols-6"
           style={{
-            width: 640 * SCENE_SCALE,
-            marginLeft: `max(24px, calc(50vw - ${COLUMN_SHIFT + (640 * SCENE_SCALE) / 2}px))`,
-            paddingTop: FOCUS_TITLE_TOP - NAV_HEIGHT,
-            paddingBottom: '60vh',
-            gap: 72 * SCENE_SCALE,
+            maxWidth: GRID_MAX + 2 * 32,
+            columnGap: GRID_GUTTER,
+            paddingInline: 32,
           }}
         >
-          {scenes.map((scene) => (
-            <div key={scene.id} ref={(el) => sceneRefs.current.set(scene.id, el)}>
-              <Scene
-                scene={scene}
-                scale={SCENE_SCALE}
-                indicatorsByNumber={indicatorsByNumber}
-                selected={selected}
-                hovered={hovered}
-                onHover={onHover}
-                onSelect={onSelect}
-                onDismiss={requestClose}
-              />
+          {/* Columns 1–3: one block per scene. The scene holds still (sticky) while its
+              indicators are stepped through, then scrolls away. In the drawer layout the
+              blocks are empty and only make the scroll track. */}
+          <div
+            ref={narrow ? undefined : measureScenes}
+            className={`col-start-1 row-start-1 ${narrow ? 'col-span-6' : 'focus-scenes focus-scenes--beside col-span-3'}`}
+            style={{
+              '--column-width': `${sceneColumnWidth}px`,
+              paddingTop: stickyTop,
+              paddingBottom: Math.max(0, paneHeight - (narrow ? STEP_PX : stickyTop + sceneHeight)),
+            }}
+          >
+            {SCENE_STEPS.map(({ scene, indicators }, i) => (
+              <div
+                key={scene.id}
+                ref={(el) => blockRefs.current.set(scene.id, el)}
+                className="relative"
+                style={{ marginTop: i ? 72 * sceneScale : 0 }}
+              >
+                {/* Snap points, one per indicator step */}
+                {indicators.map((number, step) => (
+                  <span key={number} className="focus-snap" style={{ top: step * STEP_PX }} aria-hidden="true" />
+                ))}
+                {narrow ? (
+                  <div style={{ height: indicators.length * STEP_PX }} />
+                ) : (
+                  <>
+                    <div className="sticky flex flex-col items-start" style={{ top: stickyTop }}>
+                      <Scene scene={scene} scale={sceneScale} {...sceneProps} />
+                    </div>
+                    <div style={{ height: (indicators.length - 1) * STEP_PX }} />
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Columns 4–6 (or all six in the drawer layout): help, close and the wheel, held still */}
+          <div
+            ref={measureWheel}
+            className={`sticky top-0 row-start-1 self-start ${narrow ? 'col-span-6 col-start-1 mx-auto w-full max-w-[600px]' : 'col-span-3 col-start-4'}`}
+            style={{ height: paneHeight || '100%' }}
+          >
+            {/* ? at the wheel's left, × at its right.
+              The help button expands rightwards into a pill with the hint. */}
+            <div
+              className="absolute inset-x-0 z-10 flex items-start justify-between gap-4"
+              style={{
+                top: HEADER_CENTRE_Y - NAV_HEIGHT - HEADER_HEIGHT / 2,
+                minHeight: HEADER_HEIGHT,
+              }}
+            >
+              <div className="focus-help" data-open={helpOpen} style={{ '--hint-max': `${hintMaxWidth}px` }}>
+                <button
+                  type="button"
+                  className="focus-help__toggle"
+                  aria-expanded={helpOpen}
+                  aria-controls="focus-hint"
+                  aria-label={helpOpen ? 'Hide help' : 'How to use the wheel'}
+                  onClick={(e) => e.nativeEvent.pointerType !== 'mouse' && setHelpOpen((open) => !open)} // mouse: hover does it
+                >
+                  <svg viewBox="0 0 24 24" className="size-6" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                    <path
+                      d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.3c-.8.4-1.2.9-1.2 1.8v.4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                    />
+                    <circle cx="12" cy="16.9" r="1.05" fill="currentColor" />
+                  </svg>
+                </button>
+                <p id="focus-hint" className="focus-help__text">
+                  {/* Laid out once at full width; the pill reveals it as it widens (no re-wrapping). */}
+                  <span className="focus-help__inner">
+                    {WHEEL_EXPAND_ALL
+                      ? 'Use the arrows to move between experiences. '
+                      : 'Rotate wheel to explore the factors behind the experience. '}
+                    <a href="./themes.html" target="_blank" rel="noopener" className="focus-help__link">
+                      Learn more
+                      <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
+                        <path
+                          d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span className="sr-only"> about the themes and factors (opens in a new tab)</span>
+                    </a>
+                  </span>
+                </p>
+              </div>
+              <button type="button" className="focus-close" onClick={requestClose} aria-label="Close and return to the page">
+                <svg viewBox="0 0 24 24" className="size-6" aria-hidden="true">
+                  <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </button>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* ----- Right: wheel (top-aligned with the illustrations; scrolls only if the window is too short) ----- */}
-      <div
-        ref={rightPane}
-        className="absolute inset-y-0 right-0 overflow-x-hidden overflow-y-auto overscroll-contain"
-        style={{ left: `calc(50% + ${WHEEL_LEFT - PANE_PAD}px)`, paddingLeft: PANE_PAD }}
-      >
-
-        <div className="relative h-[700px] w-[600px]" style={{ marginTop: WHEEL_TOP, marginBottom: 24 }}>
-          {wheels.map((wheel) => (
-            <div key={wheel.key} className={`absolute inset-0 wheel-${wheel.state}`} data-dir={wheel.dir ?? 'down'}>
-              <IndicatorWheel
-                indicator={indicatorsByNumber.get(wheel.number)}
-                startAt={wheel.startAt}
-                onPrev={onPrev}
-                onNext={onNext}
-                hasPrev={Boolean(onPrev)}
-                hasNext={Boolean(onNext)}
-              />
+            {/* The wheel, top-aligned to the header line */}
+            <div
+              className="relative mx-auto"
+              style={{
+                width: WHEEL_BOX.width * wheelScale,
+                height: WHEEL_BOX.height * wheelScale,
+                marginTop: wheelTop,
+                marginBottom: 24,
+              }}
+            >
+              {wheels.map((wheel) => (
+                <div key={wheel.key} className={`absolute inset-0 wheel-${wheel.state}`} data-dir={wheel.dir}>
+                  <div
+                    className="origin-top-left"
+                    style={{
+                      width: WHEEL_BOX.width,
+                      height: WHEEL_BOX.height,
+                      transform: `scale(${wheelScale})`,
+                    }}
+                  >
+                    <IndicatorWheel
+                      indicator={indicatorsByNumber.get(wheel.number)}
+                      onPrev={onPrev}
+                      onNext={onNext}
+                      hasPrev={Boolean(onPrev)}
+                      hasNext={Boolean(onNext)}
+                      settleFrom={wheel.dir === 'up' ? -SETTLE_DEG : SETTLE_DEG} // eases clockwise into place going down, back going up
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
-      </div>
-
-      {/* Help (?) and close (×), right-aligned to the wheel's box and fixed
-          (they don't scroll with the wheel pane). The help button
-          expands leftwards into a pill with the hint; click again to collapse. */}
-      <div
-        className="absolute z-10 flex -translate-x-full items-center gap-4"
-        style={{ left: `calc(50% + ${WHEEL_LEFT + 600}px)`, top: HEADER_CENTRE_Y - NAV_HEIGHT - HEADER_HEIGHT / 2, height: HEADER_HEIGHT }}
-      >
-        <button
-          type="button"
-          className="focus-help"
-          aria-expanded={helpOpen}
-          aria-label={helpOpen ? `Hide help: ${HINT}` : 'How to use the wheel'}
-          onClick={() => setHelpOpen((open) => !open)}
-        >
-          <span className="flex size-12 shrink-0 items-center justify-center" aria-hidden="true">
-            <svg viewBox="0 0 24 24" className="size-6">
-              <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
-              <path
-                d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.3c-.8.4-1.2.9-1.2 1.8v.4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
-              <circle cx="12" cy="16.9" r="1.05" fill="currentColor" />
-            </svg>
-          </span>
-          <span className="focus-help__text" aria-hidden={!helpOpen}>
-            {HINT}
-          </span>
-        </button>
-        <button type="button" className="focus-close" onClick={requestClose} aria-label="Close and return to the page">
-          <svg viewBox="0 0 24 24" className="size-6" aria-hidden="true">
-            <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
-        </button>
       </div>
     </div>,
     document.body,

@@ -55,22 +55,32 @@
   --font-heading: 'Rubik', system-ui, sans-serif;
   --font-body: 'Manrope', system-ui, sans-serif;
 
-  /* ---- Type scale (desktop; spec §3.2) ---------------------------------- */
-  --text-h1-home: 84px;
-  --text-h1-home--line-height: 96px;
-  --text-h1-home--letter-spacing: 1.68px;
-  --text-h1: 72px;
-  --text-h1--line-height: 84px;
-  --text-h2: 48px;
-  --text-h2--line-height: 60px;
-  --text-h3: 32px;
-  --text-h3--line-height: 42px;
-  --text-h4: 24px;
-  --text-h4--line-height: 36px;
-  --text-body: 18px;
-  --text-body--line-height: 27px;
-  --text-nav: 16px;
-  --text-nav--line-height: 24px;
+  /* ---- Type scale (spec §3.2) -------------------------------------------
+     In rem, so text follows the reader's browser font size.
+     Headings are fluid: Figma size at a 1440px window, easing down to a
+     smaller size at 1024px (clamp, no breakpoints). Line heights are ratios
+     so they follow. Body, nav and small text keep one size. */
+  --text-h1-home: clamp(4.375rem, 2.221rem + 3.365vw, 5.25rem); /* 70 → 84px */
+  --text-h1-home--line-height: 1.1429; /* 96 / 84 */
+  --text-h1-home--letter-spacing: 0.02em; /* 1.68px at 84px */
+  --text-h1: clamp(3.75rem, 1.904rem + 2.885vw, 4.5rem); /* 60 → 72px */
+  --text-h1--line-height: 1.1667; /* 84 / 72 */
+  --text-h2: clamp(2.5rem, 1.269rem + 1.923vw, 3rem); /* 40 → 48px */
+  --text-h2--line-height: 1.25; /* 60 / 48 */
+  --text-h3: clamp(1.75rem, 1.135rem + 0.962vw, 2rem); /* 28 → 32px */
+  --text-h3--line-height: 1.3125; /* 42 / 32 */
+  --text-h4: clamp(1.375rem, 1.067rem + 0.481vw, 1.5rem); /* 22 → 24px */
+  --text-h4--line-height: 1.5; /* 36 / 24 */
+  --text-body: 1.125rem; /* 18px */
+  --text-body--line-height: 1.6875rem; /* 27px */
+  --text-nav: 1rem; /* 16px */
+  --text-nav--line-height: 1.5rem; /* 24px */
+  --text-help: 0.875rem; /* 14px: focus-view help pill */
+  --text-help--line-height: 1.25rem; /* 20px */
+  --text-label: 0.75rem; /* 12px: hover labels */
+  --text-label--line-height: 1rem; /* 16px */
+  --text-label-hint: 0.6875rem; /* 11px: "Click to explore" hint */
+  --text-label-hint--line-height: 0.875rem; /* 14px */
 
   /* ---- Motion ----------------------------------------------------------- */
   /* One soft ease-out for everything: fast start, long gentle settle. */

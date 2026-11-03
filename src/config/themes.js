@@ -15,7 +15,7 @@ export const WHEEL_THEMES = [
 ];
 
 // Wheel mode (being compared):
-//   true  — every mapped theme shows its strong factors at once; arrows change indicator
+//   true  — every mapped theme shows its ticked factors at once; arrows change indicator
 //   false — one theme at a time, rotated to the bottom; arrows step through themes
 export const WHEEL_EXPAND_ALL = false;
 

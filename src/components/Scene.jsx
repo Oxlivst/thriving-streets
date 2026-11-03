@@ -244,7 +244,7 @@ export default function Scene({
   };
 
   return (
-    <div className="mx-auto" style={{ width: SCENE_BOX.width * scale }}>
+    <div className="scene mx-auto" style={{ width: SCENE_BOX.width * scale }}>
       <h2 className="scene-title scene-fade" style={{ opacity: titleVisible ? 1 : 0 }}>
         {scene.title}
       </h2>

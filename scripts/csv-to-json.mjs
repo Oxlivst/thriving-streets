@@ -42,16 +42,16 @@ const slug = (text) =>
 
 const clean = (text) => text.replace(/\s+/g, ' ').trim();
 
-// A mapping cell: "✓✓" or "✓", a blank line, then "• quote" lines.
+// A mapping cell: any tick ("✓"; an older "✓✓" counts the same), optionally followed
+// by "• quote" lines. Every ticked factor is shown on the wheel.
 function parseCell(cell) {
   const text = cell.trim();
   if (!text.startsWith('✓')) return null;
-  const strength = text.startsWith('✓✓') ? 'strong' : 'implied';
   const quotes = text
     .split('\n')
     .filter((line) => line.trim().startsWith('•'))
     .map((line) => clean(line.replace(/^\s*•/, '')));
-  return { strength, quotes };
+  return { quotes };
 }
 
 const rows = parse(readFileSync(inputPath, 'utf8'), { relax_column_count: true });
@@ -111,8 +111,8 @@ for (const row of rows.slice(FIRST_INDICATOR_ROW)) {
     mappings,
   };
 
-  if (!mappings.some((m) => m.strength === 'strong')) {
-    fail(`indicator ${number} ("${indicator.text}") has no strong (✓✓) mapping, so its wheel would be empty.`);
+  if (!mappings.length) {
+    fail(`indicator ${number} ("${indicator.text}") has no ticked (✓) factor, so its wheel would be empty.`);
   }
   if (!existsSync(resolve(root, 'public', indicator.illustration))) missingArt.push(number);
   indicators.push(indicator);

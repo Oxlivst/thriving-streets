@@ -31,7 +31,6 @@ Exported from the Google Sheet *FSO_Indicator Mapping and Assessments*, tab *Ind
 
 The number in column A also names the indicator's illustration (`1.` → `public/illustrations/indicators/indicator-01.svg`). If you reorder indicators in the sheet, rename the illustration files to match.
 
-Each factor cell is empty, or starts with a tick followed by bullet-point quotes (`•`):
-
-- `✓✓` = strong and direct association with the factor
-- `✓` = the factor is implied by the indicator
+Each factor cell is empty, or holds a tick (`✓`), optionally followed by bullet-point quotes (`•`).
+Every ticked factor is shown on the indicator's wheel. There is no strong / weak distinction:
+an older `✓✓` counts the same as `✓`.
