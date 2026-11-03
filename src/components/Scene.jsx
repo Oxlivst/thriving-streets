@@ -15,11 +15,12 @@ import { SCENE_BOX } from '../config/scenes.js';
 const ALPHA_THRESHOLD = 24;
 const SWITCH_DELAY_MS = 120; // moving from one illustration to another
 const LEAVE_DELAY_MS = 180; // moving off all illustrations
-const SELECTED_HALO_OPACITY = 0.5; // halo behind the selected illustration in the focus view
+const SELECTED_HALO_OPACITY = 0.5; // halo behind the selected illustration in the focus view (0 = off)
+const HALO_SIZE = 0.75; // halo size relative to the positions in scenes.js (1 = as designed)
 const TITLE_SHOW_AT = 0.67; // share of the illustrations on screen before the scene description appears
 const PARALLAX_PX = 24; // largest scroll drift of an illustration (depth ±1), page scenes only
 const LABEL_DELAY_MS = 500; // hover time before the indicator text appears
-const LABEL_OVERLAP = 28; // how far the label tucks up into the illustration, in scene px
+const LABEL_OVERLAP = 48; // how far the label tucks up into the illustration, in scene px
 const LABEL_WIDTH = 300; // max label width at 1:1, in px (matches .hover-label in main.css)
 const LABEL_HINT = 'Click to see the themes behind it';
 
@@ -30,7 +31,7 @@ const LABEL_BLOB =
 
 // Indicator text under an illustration. Text keeps its size at any scene scale.
 // While visible, the label holds the hover for its illustration, so the pointer can rest on it.
-function HoverLabel({ slot, text, visible, scale }) {
+function HoverLabel({ slot, text, hint, chevron = false, visible, scale }) {
   const centreX = Math.min(Math.max(slot.x + slot.width / 2, LABEL_WIDTH / 2), SCENE_BOX.width - LABEL_WIDTH / 2);
   return (
     <div
@@ -48,8 +49,15 @@ function HoverLabel({ slot, text, visible, scale }) {
       <svg viewBox="0 0 300 70" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden="true">
         <path d={LABEL_BLOB} fill="var(--color-bg-alt)" />
       </svg>
-      <p className="relative">{text}</p>
-      <p className="hover-label__hint">{LABEL_HINT}</p>
+      <p className="relative inline-flex items-center justify-center gap-1">
+        {text}
+        {chevron && (
+          <svg viewBox="0 0 12 12" className="size-3 shrink-0" aria-hidden="true">
+            <path d="M4.5 2.5L8 6L4.5 9.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </p>
+      {hint && <p className="hover-label__hint">{hint}</p>}
     </div>
   );
 }
@@ -229,7 +237,10 @@ export default function Scene({
   const haloStyle = (number) => {
     const slot = scene.slots.find((s) => s.indicator === number);
     if (!slot) return {};
-    return { left: slot.halo.x, top: slot.halo.y, width: slot.halo.size, height: slot.halo.size };
+    // Shrink around the halo's own centre, so it stays where the design puts it.
+    const size = slot.halo.size * HALO_SIZE;
+    const inset = (slot.halo.size - size) / 2;
+    return { left: slot.halo.x + inset, top: slot.halo.y + inset, width: size, height: size };
   };
 
   return (
@@ -274,6 +285,7 @@ export default function Scene({
                 type="button"
                 className="scene-slot pointer-events-none"
                 data-lifted={slot.indicator === hoveredHere && slot.indicator !== selected}
+                data-selected={slot.indicator === selected}
                 style={{ left: slot.x, top: slot.y, width: slot.width, height: slot.height, translate: `0 var(--parallax-${slot.indicator}, 0px)` }}
                 aria-label={indicator.text}
                 aria-describedby={hintId}
@@ -295,13 +307,16 @@ export default function Scene({
             );
           })}
 
-          {/* Indicator text under the hovered illustration (not the selected one: the wheel shows its text). */}
+          {/* Indicator text under the hovered illustration; "Currently open" under the selected one. */}
           {scene.slots.map((slot) => (
             <HoverLabel
               key={slot.indicator}
               slot={slot}
-              text={indicatorsByNumber.get(slot.indicator).text}
-              visible={labelFor === slot.indicator && slot.indicator !== selected}
+              // The selected illustration's label just says it's open (its text is in the wheel).
+              text={slot.indicator === selected ? 'Currently open' : indicatorsByNumber.get(slot.indicator).text}
+              hint={slot.indicator === selected ? null : LABEL_HINT}
+              chevron={slot.indicator === selected}
+              visible={labelFor === slot.indicator}
               scale={scale}
             />
           ))}

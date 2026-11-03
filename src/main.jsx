@@ -9,9 +9,11 @@ import '@fontsource/rubik-doodle-shadow/latin-400.css';
 import './styles/main.css';
 
 import { createRoot } from 'react-dom/client';
+import { initHeader } from './scripts/header.js';
 import { initHero } from './scripts/hero.js';
 import VisionExplorer from './components/VisionExplorer.jsx';
 
+initHeader();
 initHero();
 
 const explorerRoot = document.getElementById('vision-explorer');

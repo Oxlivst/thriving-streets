@@ -13,7 +13,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { FACTOR_LABELS, WHEEL_EXPAND_ALL, WHEEL_THEMES, themeBg, themeText } from '../config/themes.js';
 
-const RING_RADIUS = 212; // outer radius of the theme ring (Figma: 252.4)
+export const RING_RADIUS = 248; // outer radius of the theme ring (Figma: 252.4)
 const RING = { outer: RING_RADIUS, inner: RING_RADIUS - 54.4, corner: 6 };
 const BAND = {
   firstInner: RING_RADIUS + 4.1,
@@ -31,7 +31,13 @@ const OUTER_ARC = { firstRadius: RING_RADIUS + 9.4, step: 12.5, width: 6.6, max:
 // Arrows sit just outside the lower ring, clear of the factor bands.
 const ARROW = { dx: RING_RADIUS * 0.864 + 25, dy: RING_RADIUS * 0.965, size: 48 };
 // Indicator text fits inside the ring's hole.
-const CENTRE_TEXT_WIDTH = Math.round((RING.inner - 22) * 2 * 0.86);
+const CENTRE_TEXT_WIDTH = Math.round((RING.inner - 22) * 2 * 0.72); // narrow enough that the column corners clear the ring
+// The illustration and text share a column that stays inside the ring's hole.
+// The illustration takes whatever height the text leaves, up to a maximum, and
+// shrinks for longer indicators.
+const CENTRE_HEIGHT = Math.round(RING.inner * 1.34); // kept short so its corners stay well inside the hole
+const CENTRE_ILLUSTRATION_MAX_HEIGHT = 150;
+const CENTRE_ILLUSTRATION_MAX_WIDTH = 210;
 const ROTATE_MS = 1100;
 const easeOutQuart = (t) => 1 - (1 - t) ** 4;
 
@@ -137,12 +143,18 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
   const expanded = expandAll ? mapped : [active];
   const isExpanded = (key) => expanded.some((t) => t.key === key);
 
-  const atFirst = expandAll || activeIndex === 0;
-  const atLast = expandAll || activeIndex === mapped.length - 1;
-  const goPrev = () => (atFirst ? onPrev?.() : setActiveIndex(activeIndex - 1));
-  const goNext = () => (atLast ? onNext?.() : setActiveIndex(activeIndex + 1));
-  const prevLabel = atFirst ? 'Previous indicator' : `Previous theme: ${mapped[activeIndex - 1].label.join(' ')}`;
-  const nextLabel = atLast ? 'Next indicator' : `Next theme: ${mapped[activeIndex + 1].label.join(' ')}`;
+  // Rotating mode: the arrows only turn the wheel, looping round the mapped themes.
+  // Changing indicator is done by scrolling over the wheel's pane (FocusView) or ↑/↓.
+  // Expanded mode has nothing to rotate, so there the arrows change indicator.
+  const count = mapped.length;
+  const prevIndex = (activeIndex - 1 + count) % count;
+  const nextIndex = (activeIndex + 1) % count;
+  const goPrev = () => (expandAll ? onPrev?.() : setActiveIndex(prevIndex));
+  const goNext = () => (expandAll ? onNext?.() : setActiveIndex(nextIndex));
+  const prevLabel = expandAll ? 'Previous indicator' : `Rotate to ${mapped[prevIndex].label.join(' ')}`;
+  const nextLabel = expandAll ? 'Next indicator' : `Rotate to ${mapped[nextIndex].label.join(' ')}`;
+  const prevDisabled = expandAll ? !hasPrev : count < 2;
+  const nextDisabled = expandAll ? !hasNext : count < 2;
 
   // In expand-all mode the wheel can outgrow its 600px box; scale it to fit.
   const mostFactors = Math.max(...expanded.map((t) => t.factors.length));
@@ -158,6 +170,8 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
   const onKeyDown = (e) => {
     if (e.key === 'ArrowLeft') (e.preventDefault(), goPrev());
     if (e.key === 'ArrowRight') (e.preventDefault(), goNext());
+    if (e.key === 'ArrowUp' && hasPrev) (e.preventDefault(), onPrev?.());
+    if (e.key === 'ArrowDown' && hasNext) (e.preventDefault(), onNext?.());
   };
 
   return (
@@ -182,8 +196,14 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
           // Two-line labels sit either side of the middle; line 1 is always the upper line.
           const radii = lines.length === 1 ? [mid] : upright ? [mid + 9, mid - 9] : [mid - 9, mid + 9];
 
+          // In rotating mode, clicking a mapped theme turns it to the bottom and expands its factors.
+          const clickable = !expandAll && isMapped && !isActive;
           return (
-            <g key={theme.key}>
+            <g
+              key={theme.key}
+              className={clickable ? 'wheel-segment wheel-segment--clickable' : 'wheel-segment'}
+              onClick={clickable ? () => setActiveIndex(mapped.findIndex((m) => m.key === theme.key)) : undefined}
+            >
               <path
                 d={sectorPath(RING.inner, RING.outer, centre, RING.corner)}
                 fill={themeBg(theme.key)}
@@ -276,13 +296,25 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
         })}
       </svg>
 
-      {/* ----- Indicator text in the centre ----- */}
-      <p
-        className="absolute flex items-center justify-center text-center text-[18px] leading-[1.35] font-semibold text-text"
-        style={{ left: 300 - CENTRE_TEXT_WIDTH / 2, top: 300 - RING.inner * 0.6, width: CENTRE_TEXT_WIDTH, height: RING.inner * 1.2 }}
+      {/* ----- Centre: a small copy of the illustration above the indicator text ----- */}
+      <div
+        className="absolute flex flex-col items-center justify-center gap-2 text-center"
+        style={{ left: 300 - CENTRE_TEXT_WIDTH / 2, top: 300 - CENTRE_HEIGHT / 2, width: CENTRE_TEXT_WIDTH, height: CENTRE_HEIGHT }}
       >
-        {indicator.text}
-      </p>
+        {indicator.illustration && (
+          // Shrinkable wrapper: starts at the maximum height, gives way when the text needs room.
+          <div className="flex min-h-0 shrink justify-center" style={{ height: CENTRE_ILLUSTRATION_MAX_HEIGHT }}>
+            <img
+              src={indicator.illustration}
+              alt=""
+              className="h-full w-auto object-contain"
+              style={{ maxWidth: CENTRE_ILLUSTRATION_MAX_WIDTH }}
+              onError={(e) => (e.currentTarget.parentElement.hidden = true)} // no artwork yet: text only
+            />
+          </div>
+        )}
+        <p className="shrink-0 text-[17px] leading-[1.3] font-semibold text-text">{indicator.text}</p>
+      </div>
 
       {/* ----- Arrows ----- */}
       <button
@@ -290,22 +322,35 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
         className="wheel-arrow disabled:opacity-40"
         style={{ left: arrowPos.prev[0], top: arrowPos.prev[1] }}
         onClick={goPrev}
-        disabled={atFirst && !hasPrev}
+        disabled={prevDisabled}
         aria-label={prevLabel}
       >
-        <Chevron direction="left" />
+        <RotateIcon direction="left" />
       </button>
       <button
         type="button"
         className="wheel-arrow disabled:opacity-40"
         style={{ left: arrowPos.next[0], top: arrowPos.next[1] }}
         onClick={goNext}
-        disabled={atLast && !hasNext}
+        disabled={nextDisabled}
         aria-label={nextLabel}
       >
-        <Chevron direction="right" />
+        <RotateIcon direction="right" />
       </button>
       </div>
+
+      {/* Keyboard / screen-reader version of clicking a theme. */}
+      {!expandAll && (
+        <ul className="sr-only">
+          {mapped.map((theme, i) => (
+            <li key={theme.key}>
+              <button type="button" onClick={() => setActiveIndex(i)} aria-pressed={i === activeIndex}>
+                Show {theme.label.join(' ')}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {/* ----- Text version for screen readers ----- */}
       <div className="sr-only" aria-live="polite">
@@ -317,11 +362,24 @@ export default function IndicatorWheel({ indicator, startAt = 'first', onPrev, o
 
 const factorName = (indicator, mapping) => FACTOR_LABELS[mapping.factor] ?? mapping.factorName;
 
-function Chevron({ direction }) {
-  const d = direction === 'left' ? 'M28.01 15.34L16.09 24.19L27.51 32.66' : 'M19.99 15.34L31.91 24.19L20.49 32.66';
+// Solid rotate arrow: a filled arrowhead on a thick curved body that tapers to a
+// point. Flipped vertically and turned 60° inwards; the left button is the mirror of the right.
+function RotateIcon({ direction }) {
   return (
-    <svg viewBox="0 0 48 48" className="size-12" aria-hidden="true">
-      <path d={d} fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 32 32" className="size-8" aria-hidden="true">
+      <path
+        d="M19 3.5L30 13.5L19 23.5V18C12.4 18 7.2 20.6 3 27C3.8 16.2 10.4 9 19 9Z"
+        fill="currentColor"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+        // Flipped vertically, then turned 60° inwards (right: anticlockwise; left: clockwise, as its mirror).
+        transform={
+          direction === 'left'
+            ? 'rotate(60 16 16) translate(32 32) scale(-1 -1)'
+            : 'rotate(-60 16 16) translate(0 32) scale(1 -1)'
+        }
+      />
     </svg>
   );
 }

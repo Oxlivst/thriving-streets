@@ -17,17 +17,22 @@
   --color-green-1: #9fc9bf;
   --color-green-2: #6cb0af;
   --color-green-3: #487e83;
-  --color-highlight-strong: #ffc654; /* Yellow-highlight-dark */
+  --color-highlight-strong: #ffd37b; /* Yellow-highlight-dark */
   --color-highlight-soft: #ffebb5; /* Yellow-highlight-light */
 
-  --color-text: #28140b; /* Text-primary */
-  --color-text-muted: #604336; /* Text-secondary: nav links, hero prompt */
+  --color-text: #17255b; /* Text-primary */
+  --color-text-muted: #565b71; /* Text-secondary: nav links, hover labels */
+  --color-hero-prompt: #553b25; /* Brown 5: hero scroll prompt, as in Figma */
   --color-label-muted: #898583; /* wheel labels on unmapped themes */
   --color-outline-pink: #f2949a; /* hero callout outlines */
 
   --color-bg: #f9efe9; /* Background-primary */
   --color-bg-alt: #fce9cc; /* Background-secondary: hover labels */
-  --color-bg-tertiary: #f5dac1; /* Background-tertiary: wheel arrows, close button */
+  /* The page is white; only the hero sits on a tint that fades from this colour
+     (behind the nav) to white at the hero's bottom edge. */
+  --color-hero-tint: var(--color-bg);
+  --color-nav-bg: var(--color-bg); /* top navigation bar: Background-primary */
+  --color-bg-tertiary: #eeccad; /* Background-tertiary: hero title shadow, close button */
 
   /* ---- Theme colours (spec §3.1.1) --------------------------------------
      -bg: solid fills with white text · -text: text on light backgrounds.
@@ -78,4 +83,16 @@
   /* ---- Layout ----------------------------------------------------------- */
   --container-content: 1200px;
   --container-column: 640px; /* hero and scene column */
+}
+
+/* ---- Hero tuning ------------------------------------------------------
+   Inside the hero only, the palette is nudged to sit with the illustrations
+   (which lean slightly warmer, with a richer yellow and a livelier teal).
+   Hues move by 3° at most; saturation and lightness by a few points.
+   Delete this block to return the hero to the style-guide values. */
+#hero {
+  --color-red-1: #f48689; /* title            (style guide #F68991) */
+  --color-red-2: #d56b6d; /* subtitle         (style guide #D47178) */
+  --color-outline-pink: #f09192; /* callout outlines (was #F2949A) */
+  --color-green-3: #447f87; /* callout fill     (style guide #487E83) */
 }
