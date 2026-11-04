@@ -1,0 +1,20 @@
+# Different-scroll preview: a push to this branch re-runs the main site's deploy (on main),
+# which also builds this branch into /different-scroll/ (see deploy.yml on main).
+# Pages can only be published from main, so this branch doesn't deploy on its own.
+
+name: Update the Different-scroll preview
+
+on:
+  push:
+    branches: [Different-scroll]
+
+permissions:
+  actions: write
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh workflow run deploy.yml --ref main --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}

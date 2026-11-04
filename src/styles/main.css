@@ -472,6 +472,19 @@
     }
   }
 
+  /* ===== Scene story (SceneStory): the homepage's one long scroll ========== */
+  /* Gentle snapping: only near a stop, so the rest of the page scrolls freely. Each stop
+     can't be scrolled past in one swipe (snap-stop: always). */
+  html:has(.scene-story) {
+    scroll-snap-type: y proximity;
+  }
+
+  .story-snap {
+    @apply pointer-events-none absolute left-0 h-px w-px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
   /* ===== Indicator wheel ================================================= */
   /* Changing indicator: a crossfade with a little motion. Moving on, the new wheel
      rises in and settles from slightly smaller; the old one drifts up as it fades.
