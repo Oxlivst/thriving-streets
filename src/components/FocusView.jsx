@@ -289,7 +289,7 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
           >
             {/* Below 960px: the selected indicator's scene, above the wheel */}
             {narrow && activeScene && (
-              <div className="focus-stack__scene" style={{ height: stackSceneHeight }}>
+              <div className="focus-stack__scene" style={{ height: stackSceneHeight, '--column-width': `${wheelColumnWidth}px` }}>
                 <Scene scene={activeScene} scale={stackSceneScale} {...sceneProps} />
               </div>
             )}
