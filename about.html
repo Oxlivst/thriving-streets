@@ -3,6 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Load entrance (src/scripts/rise.js): keep [data-rise] content hidden from the first
+         paint until its animation starts, so it doesn't flash in and then vanish. Shown anyway
+         after 3s if the scripts never run. -->
+    <style>
+      .rise-pending [data-rise]:not(.rise-in) {
+        opacity: 0;
+      }
+    </style>
+    <script>
+      document.documentElement.classList.add('rise-pending');
+      setTimeout(() => document.documentElement.classList.remove('rise-pending'), 3000);
+    </script>
     <title>About the project | Future Streets Oxfordshire</title>
     <meta
       name="description"
