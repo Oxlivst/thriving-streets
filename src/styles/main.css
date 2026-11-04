@@ -175,6 +175,15 @@
     @apply absolute top-[297px] left-1/2 w-[480px] -translate-x-1/2 text-center text-body font-bold text-text;
   }
 
+  /* Fades on an inner span, since the <p> carries the load entrance animation (data-rise). */
+  .hero-prompt__text {
+    transition: opacity var(--duration-slow-fade) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hero-prompt[data-hidden='true'] .hero-prompt__text {
+    @apply opacity-0;
+  }
+
   /* Phones (below 700px): the hero fills the screen width. The title and subtitle shrink,
      and the callouts stack, wrap their text and sit over the (centred) dotted line. */
   @media (max-width: 699.98px) {
@@ -201,8 +210,11 @@
       @apply relative inset-auto h-auto w-full;
     }
 
+    /* Full width with slim padding, and on the narrowest phones the text eases down a little
+       (never below 15px), so each callout fits on two lines. */
     .callout {
-      @apply mx-auto h-auto max-w-[20rem] px-5 py-3 text-center whitespace-normal;
+      @apply mx-auto h-auto w-full max-w-[22rem] px-4 py-3 text-center text-balance whitespace-normal;
+      font-size: clamp(0.9375rem, calc((100vw - 5rem) / 19), var(--text-body));
     }
 
     .hero-prompt {
