@@ -7,3 +7,6 @@ dist/
 
 # Generated from data/*.csv at build time
 src/data/*.json
+
+# Made from public/illustrations/indicators/*.svg at build time (scripts/illustrations-to-webp.mjs)
+public/illustrations/indicators/webp/

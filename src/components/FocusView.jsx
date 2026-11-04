@@ -63,6 +63,16 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
   const blockRefs = useRef(new Map()); // scene id → its block in the scroll track
   const [closing, setClosing] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false); // tapped open (touch); hover and focus open it via CSS
+  const helpRef = useRef(null);
+  // While it's tapped open, a tap anywhere outside the pill closes it.
+  useEffect(() => {
+    if (!helpOpen) return;
+    const onPointerDown = (e) => {
+      if (!helpRef.current?.contains(e.target)) setHelpOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+  }, [helpOpen]);
   const narrow = useNarrow(); // below DRAWER_BELOW (src/config/layout.js): the scene sits above the wheel
 
   // Scale the scenes and the wheel to the room they actually have.
@@ -153,11 +163,19 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
   const programmatic = useRef(0); // until when a smooth scroll we started is still running
   useEffect(() => {
     const box = scroller.current;
+    // Measured once, and again only when the view or its content changes size, so a scroll
+    // event never has to work out the layout (which made scrolling stutter on phones).
+    let steps = stepPositions();
+    const remeasure = new ResizeObserver(() => {
+      steps = stepPositions();
+    });
+    remeasure.observe(box);
+    if (box.firstElementChild) remeasure.observe(box.firstElementChild);
     const onScroll = () => {
       if (performance.now() < programmatic.current) return;
       const y = box.scrollTop;
       let current = null;
-      for (const step of stepPositions()) if (current === null || step.at <= y + STEP_PX / 2) current = step.number;
+      for (const step of steps) if (current === null || step.at <= y + STEP_PX / 2) current = step.number;
       if (current !== null && current !== selectedRef.current) {
         fromScroll.current = current;
         onSelectRef.current(current);
@@ -169,6 +187,7 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
     box.addEventListener('scroll', onScroll, { passive: true });
     box.addEventListener('scrollend', onScrollEnd);
     return () => {
+      remeasure.disconnect();
       box.removeEventListener('scroll', onScroll);
       box.removeEventListener('scrollend', onScrollEnd);
     };
@@ -311,14 +330,24 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
                 minHeight: HEADER_HEIGHT,
               }}
             >
-              <div className="focus-help" data-open={helpOpen} style={{ '--hint-max': `${hintMaxWidth}px` }}>
+              {/* Touch and keyboard: a tap anywhere on the pill (except its link) opens or closes it,
+                  and a tap outside closes it. Mouse: hover does it (CSS), so clicks are ignored. */}
+              <div
+                ref={helpRef}
+                className="focus-help"
+                data-open={helpOpen}
+                style={{ '--hint-max': `${hintMaxWidth}px` }}
+                onClick={(e) => {
+                  if (e.nativeEvent.pointerType === 'mouse' || e.target.closest('a')) return;
+                  setHelpOpen((open) => !open);
+                }}
+              >
                 <button
                   type="button"
                   className="focus-help__toggle"
                   aria-expanded={helpOpen}
                   aria-controls="focus-hint"
                   aria-label={helpOpen ? 'Hide help' : 'How to use the wheel'}
-                  onClick={(e) => e.nativeEvent.pointerType !== 'mouse' && setHelpOpen((open) => !open)} // mouse: hover does it
                 >
                   <svg viewBox="0 0 24 24" className="size-6" aria-hidden="true">
                     <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" strokeWidth="1.6" />

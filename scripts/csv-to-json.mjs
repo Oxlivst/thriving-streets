@@ -108,6 +108,9 @@ for (const row of rows.slice(FIRST_INDICATOR_ROW)) {
     text: clean(row[1] ?? ''),
     illustration: `illustrations/indicators/indicator-${padded}.svg`,
     illustrationFaded: `illustrations/indicators/indicator-${padded}-faded.svg`,
+    // WebP copies for phones and touch screens (scripts/illustrations-to-webp.mjs).
+    illustrationWebp: `illustrations/indicators/webp/indicator-${padded}.webp`,
+    illustrationFadedWebp: `illustrations/indicators/webp/indicator-${padded}-faded.webp`,
     mappings,
   };
 

@@ -260,6 +260,15 @@
     transition: opacity var(--duration-fade) var(--ease-smooth);
   }
 
+  /* Phones, tablets and touch screens (where the WebP copies are shown; Scene.jsx): the
+     colour picture gets its own layer, so its fade in the wheel view is just an opacity
+     change, with no redrawing. Five small layers per scene. */
+  @media (pointer: coarse), (max-width: 959.98px) {
+    .scene-slot__colour {
+      will-change: opacity;
+    }
+  }
+
   /* Scene description: a slow, gentle fade (eased in and out so it never pops). */
   .scene-fade {
     transition: opacity var(--duration-slow-fade) cubic-bezier(0.4, 0, 0.2, 1);
@@ -351,9 +360,13 @@
     @apply flex size-12 shrink-0 items-center justify-center rounded-full;
   }
 
-  .focus-help:hover,
-  .focus-close:hover {
-    @apply bg-bg-alt;
+  /* Hover only where there's a real pointer: on touch screens a tap leaves :hover stuck on,
+     which would hold the pill open after it's tapped closed. */
+  @media (hover: hover) {
+    .focus-help:hover,
+    .focus-close:hover {
+      @apply bg-bg-alt;
+    }
   }
 
   /* The pill's text area: a mask that widens to reveal the text. */
@@ -377,7 +390,14 @@
 
   /* Expands while hovered or focused (the link inside stays reachable by keyboard),
      or when the ? is tapped on touch screens (data-open). */
-  .focus-help:hover .focus-help__text,
+  @media (hover: hover) {
+    .focus-help:hover .focus-help__text {
+      @apply opacity-100;
+      max-width: var(--hint-max, 560px);
+      max-height: 6rem;
+      transition-delay: 0ms, 0ms, 100ms;
+    }
+  }
   .focus-help:has(:focus-visible) .focus-help__text,
   .focus-help[data-open='true'] .focus-help__text {
     @apply opacity-100;
