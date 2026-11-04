@@ -33,6 +33,7 @@ const HEADER_HEIGHT = 48;
 export const FOCUS_TITLE_TOP = HEADER_CENTRE_Y - 13.5; // scene title (27px line) centred on the row
 const STICKY_TOP = FOCUS_TITLE_TOP - NAV_HEIGHT; // where a scene holds still, inside this view
 
+const TOUCH_WINDOW_MS = 1000; // a click this soon after a touch on the help pill is that tap
 const GRID_MAX = 1200; // the two halves together
 const GRID_GUTTER = 24;
 const WHEEL_BOX = { width: 600, height: 700 }; // IndicatorWheel's own coordinate box (centre at 300, 300)
@@ -65,6 +66,7 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
   const [helpOpen, setHelpOpen] = useState(false); // tapped open (touch); hover and focus open it via CSS
   const helpRef = useRef(null);
   const [helpInput, setHelpInput] = useState('mouse'); // how the pill was last pressed: mouse, pen or touch
+  const lastTouch = useRef(-Infinity); // when a finger last touched the pill
   // While it's tapped open, a tap anywhere outside the pill closes it.
   useEffect(() => {
     if (!helpOpen) return;
@@ -72,7 +74,11 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
       if (!helpRef.current?.contains(e.target)) setHelpOpen(false);
     };
     document.addEventListener('pointerdown', onPointerDown, true);
-    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('touchstart', onPointerDown, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('touchstart', onPointerDown, { capture: true });
+    };
   }, [helpOpen]);
   const narrow = useNarrow(); // below DRAWER_BELOW (src/config/layout.js): the scene sits above the wheel
 
@@ -339,13 +345,22 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
                 data-open={helpOpen}
                 data-input={helpInput}
                 style={{ '--hint-max': `${hintMaxWidth}px` }}
-                // The click event can't be trusted to say how it was made (iPad Safari reports a
-                // tap as a mouse click), so pointerdown, which does, records it first.
-                onPointerDown={(e) => setHelpInput(e.pointerType || 'mouse')}
+                // Browsers don't reliably say how a click was made (iPad Safari and Chrome report
+                // taps as mouse clicks), so a finger is recognised by the touch events every
+                // touch screen sends first, and pointerdown covers pens.
+                onTouchStart={() => {
+                  lastTouch.current = performance.now();
+                  setHelpInput('touch');
+                }}
+                onPointerDown={(e) => {
+                  if (performance.now() - lastTouch.current > TOUCH_WINDOW_MS) setHelpInput(e.pointerType || 'mouse');
+                }}
                 onClick={(e) => {
                   if (e.target.closest('a')) return;
                   const keyboard = e.detail === 0;
-                  if (!keyboard && helpInput === 'mouse') return; // mouse: hover does it
+                  const touch = performance.now() - lastTouch.current < TOUCH_WINDOW_MS;
+                  const pen = e.nativeEvent.pointerType === 'pen';
+                  if (!keyboard && !touch && !pen) return; // mouse: hover does it
                   setHelpOpen((open) => !open);
                 }}
               >
