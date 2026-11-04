@@ -12,6 +12,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { FACTOR_LABELS, WHEEL_EXPAND_ALL, WHEEL_THEMES, themeBg, themeText } from '../config/themes.js';
+import { SLICE, rad, polar, pt, norm, sectorPath, sliceSpan, textArc, isLowerHalf, factorFontSize } from './wheelGeometry.js';
 
 export const RING_RADIUS = 248; // outer radius of the theme ring (Figma: 252.4)
 const RING = { outer: RING_RADIUS, inner: RING_RADIUS - 54.4, corner: 6 };
@@ -22,11 +23,6 @@ const BAND = {
   corner: 6,
   opacities: [0.2, 0.15, 0.1, 0.08],
 };
-// Every segment owns a 60° slice. Neighbouring segments are separated by a gap
-// of constant width (parallel edges, not a wedge). Factor bands use the same
-// edges, so they line up with the active theme's segment.
-const SLICE = 60;
-const GAP = 8; // px between neighbouring segments
 const OUTER_ARC = { firstRadius: RING_RADIUS + 9.4, step: 12.5, width: 6.6, max: 3 };
 // Arrows sit just beside the selected theme at the bottom of the ring, level with
 // where its factor bands start (centre of each button, from the wheel's centre).
@@ -40,60 +36,10 @@ const CENTRE_HEIGHT = Math.round(RING.inner * 1.34); // kept short so its corner
 const CENTRE_ILLUSTRATION_MAX_HEIGHT = 150;
 const CENTRE_ILLUSTRATION_MAX_WIDTH = 210;
 const ROTATE_MS = 1100;
-const SETTLE_BANDS_DELAY_MS = 550; // a new wheel's factors come out once it has (nearly) settled
+const SETTLE_BANDS_DELAY_MS = 550; // a theme's factors come out once the wheel has (nearly) settled on it
 const easeOutQuart = (t) => 1 - (1 - t) ** 4;
 
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-// ----- Geometry helpers (0° = top, clockwise) ------------------------------
-const rad = (deg) => (deg * Math.PI) / 180;
-const polar = (r, deg) => [r * Math.sin(rad(deg)), -r * Math.cos(rad(deg))];
-const pt = ([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`;
-const norm = (deg) => ((deg % 360) + 360) % 360;
-
-// Angle (deg) by which a slice edge sits inside its boundary ray at radius r,
-// when the edge is a straight line `offset` px from that ray.
-const edgeAngle = (offset, r) => (Math.asin(Math.min(1, offset / r)) * 180) / Math.PI;
-
-// Annular sector filling one slice, with straight edges parallel to the slice
-// boundaries (GAP/2 inside them). Inset by `corner` so a round-joined stroke of
-// 2×corner restores the full size with rounded corners.
-function sectorPath(inner, outer, centre, corner) {
-  const r1 = inner + corner;
-  const r2 = outer - corner;
-  const offset = GAP / 2 + corner;
-  const start = centre - SLICE / 2;
-  const end = centre + SLICE / 2;
-  return [
-    `M ${pt(polar(r2, start + edgeAngle(offset, r2)))}`,
-    `A ${r2} ${r2} 0 0 1 ${pt(polar(r2, end - edgeAngle(offset, r2)))}`,
-    `L ${pt(polar(r1, end - edgeAngle(offset, r1)))}`,
-    `A ${r1} ${r1} 0 0 0 ${pt(polar(r1, start + edgeAngle(offset, r1)))}`,
-    'Z',
-  ].join(' ');
-}
-
-// Usable angle of a slice at radius r, between its two edges.
-const sliceSpan = (r, inset = 0) => SLICE - 2 * edgeAngle(GAP / 2 + inset, r);
-
-// Arc for text. Segments in the lower half run anticlockwise so text stays upright.
-function textArc(r, centre, span, upright) {
-  const a0 = centre - span / 2;
-  const a1 = centre + span / 2;
-  return upright
-    ? `M ${pt(polar(r, a0))} A ${r} ${r} 0 0 1 ${pt(polar(r, a1))}`
-    : `M ${pt(polar(r, a1))} A ${r} ${r} 0 0 0 ${pt(polar(r, a0))}`;
-}
-
-const isLowerHalf = (deg) => norm(deg) > 90 && norm(deg) < 270;
-
-// Shrink long factor labels so they fit their band (returned in rem).
-function factorFontSize(text, radius, span) {
-  const available = rad(span) * radius - 28;
-  const estimated = text.length * 7.4; // Manrope 500 at 14px ≈ 7.4px per character
-  const px = Math.max(10.5, Math.min(14, (14 * available) / estimated));
-  return `${px / 16}rem`;
-}
 
 // ----- Component -------------------------------------------------------------
 // settleFrom (optional, degrees): the wheel appears turned this far from its resting angle,
@@ -125,23 +71,36 @@ export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, has
   const activeIndex = (((startIndex - step) % count) + count) % count;
   const setActiveIndex = (i) => {
     turnRef.current = null; // shortest way
-    settlingRef.current = false;
     setStep((startIndex - i + count) % count);
   };
   const active = mapped[activeIndex];
 
   // Ring rotation: the active theme sits at the bottom (180°).
-  const [rotation, setRotation] = useState(180 - active.angle - settleFrom);
-  const rotationRef = useRef(rotation);
-  const showRotation = (value) => {
+  // The drawing is turned as one group (its transform is set directly each frame), so a
+  // turn doesn't re-render the wheel. React only re-renders when a label crosses into
+  // the other half of the wheel and has to flip to stay upright (labelRotation).
+  const spinRef = useRef(null);
+  const rotationRef = useRef(180 - active.angle - settleFrom);
+  const [labelRotation, setLabelRotation] = useState(rotationRef.current);
+  const halves = (rot) => WHEEL_THEMES.map((t) => (isLowerHalf(t.angle + rot) ? 1 : 0)).join('');
+  const showRotation = (value, final = false) => {
     rotationRef.current = value;
-    setRotation(value);
+    spinRef.current?.setAttribute('transform', `rotate(${value})`);
+    setLabelRotation((shown) => (final || halves(shown) !== halves(value) ? value : shown));
   };
   // Which way to turn: 'next' turns the wheel clockwise (its bottom moves left), 'prev'
   // anticlockwise (bottom moves right); null (the settle, theme clicks) turns the shortest way.
   const turnRef = useRef(null);
-  // The opening theme's factors wait for the settle; later themes' factors come out straight away.
-  const settlingRef = useRef(settleFrom !== 0);
+  // Every change of theme plays the same sequence, whether it comes from a new indicator
+  // (scrolling), the arrows or a click on a theme: the wheel turns, the theme arriving at
+  // the bottom keeps its collapsed lines while it settles, then they hand over to its
+  // factor bands; the theme that leaves gets its lines back, fading in.
+  const [leaving, setLeaving] = useState(null);
+  const lastActiveRef = useRef(null);
+  useEffect(() => {
+    if (lastActiveRef.current && lastActiveRef.current !== active.key) setLeaving(lastActiveRef.current);
+    lastActiveRef.current = active.key;
+  }, [active.key]);
   useEffect(() => {
     const from = rotationRef.current;
     const ahead = norm(180 - active.angle - from); // clockwise distance to the target, 0–360
@@ -150,14 +109,14 @@ export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, has
       ahead === 0 ? 0 : direction === 'next' ? ahead : direction === 'prev' ? ahead - 360 : norm(ahead + 180) - 180;
     const to = from + delta;
     if (reduceMotion() || delta === 0) {
-      showRotation(to);
+      showRotation(to, true);
       return;
     }
     let frame;
     const start = performance.now();
     const tick = (now) => {
       const t = Math.min(1, (now - start) / ROTATE_MS);
-      showRotation(from + delta * easeOutQuart(t));
+      showRotation(from + delta * easeOutQuart(t), t === 1);
       if (t < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -167,7 +126,8 @@ export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, has
   // Expand-all mode: the ring stays still, every mapped theme shows its bands,
   // and the arrows move between indicators.
   const expandAll = WHEEL_EXPAND_ALL;
-  const ringRotation = expandAll ? 0 : rotation;
+  const ringRotation = expandAll ? 0 : labelRotation; // decides which labels are flipped
+  const spin = expandAll ? 0 : rotationRef.current; // the drawing's actual angle right now
   const expanded = expandAll ? mapped : [active];
   const isExpanded = (key) => expanded.some((t) => t.key === key);
 
@@ -180,13 +140,11 @@ export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, has
   const goPrev = () => {
     if (atFirst) return onPrev?.();
     turnRef.current = 'prev';
-    settlingRef.current = false;
     setStep(step - 1);
   };
   const goNext = () => {
     if (atLast) return onNext?.();
     turnRef.current = 'next';
-    settlingRef.current = false;
     setStep(step + 1);
   };
   const prevLabel = atFirst ? 'Previous indicator' : `Rotate to ${mapped[(activeIndex + 1) % count].label.join(' ')}`;
@@ -222,13 +180,14 @@ export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, has
     >
       <div className="absolute inset-0" style={{ transform: `scale(${fit})`, transformOrigin: '300px 300px' }}>
       <svg viewBox="-300 -300 600 700" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
-        {/* ----- Ring: one segment per theme ----- */}
+        <g ref={spinRef} transform={`rotate(${spin})`}>
+        {/* ----- Ring: one segment per theme (drawn unrotated; the group turns it) ----- */}
         {WHEEL_THEMES.map((theme) => {
-          const centre = theme.angle + ringRotation;
+          const centre = theme.angle;
           const themeMapping = mapped.find((m) => m.key === theme.key);
           const isMapped = Boolean(themeMapping);
           const isActive = isExpanded(theme.key);
-          const upright = !isLowerHalf(centre);
+          const upright = !isLowerHalf(theme.angle + ringRotation);
           const lines = theme.label;
           const mid = (RING.inner + RING.outer) / 2;
           // Two-line labels sit either side of the middle; line 1 is always the upper line.
@@ -251,17 +210,17 @@ export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, has
                 opacity={isMapped ? 0.9 : 0.15}
               />
 
-              {/* Outer arcs: one per ticked factor, on mapped themes that aren't active. While a
-                  new wheel settles, its opening theme shows them too, then they give way to the
-                  factor bands, so the lines read as collapsed factors. */}
+              {/* Outer arcs: one per ticked factor, on every mapped theme. On the theme at the
+                  bottom they give way to its factor bands once the wheel settles (so the lines
+                  read as collapsed factors); on the theme that just left, they fade back in. */}
               {isMapped &&
-                (!isActive || settlingRef.current) &&
                 themeMapping.factors.slice(0, OUTER_ARC.max).map((_, i) => {
                   const r = OUTER_ARC.firstRadius + i * OUTER_ARC.step;
+                  const arcClass = isActive ? 'wheel-arc--handoff' : theme.key === leaving ? 'wheel-arc--return' : undefined;
                   return (
                     <path
                       key={i}
-                      className={isActive ? 'wheel-arc--handoff' : undefined}
+                      className={arcClass}
                       style={isActive ? { animationDelay: `${SETTLE_BANDS_DELAY_MS}ms` } : undefined}
                       d={textArc(r, centre, sliceSpan(r, OUTER_ARC.width / 2), true)}
                       fill="none"
@@ -298,10 +257,15 @@ export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, has
 
         {/* ----- Factor bands: under the active theme, or under every mapped theme ----- */}
         {expanded.map((theme) => {
-          const centre = theme.angle + ringRotation;
-          const upright = !isLowerHalf(centre);
+          const centre = theme.angle;
+          const upright = !isLowerHalf(theme.angle + ringRotation);
           return (
-            <g key={expandAll ? theme.key : `active-${theme.key}`} className="wheel-bands">
+            // Outward direction of this theme in the (unrotated) drawing, for the bands' entrance.
+            <g
+              key={expandAll ? theme.key : `active-${theme.key}`}
+              className="wheel-bands"
+              style={{ '--ox': polar(1, centre)[0].toFixed(3), '--oy': polar(1, centre)[1].toFixed(3) }}
+            >
               {theme.factors.map((factor, i) => {
                 const inner = BAND.firstInner + i * BAND.step;
                 const outer = inner + BAND.thickness + i;
@@ -309,7 +273,7 @@ export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, has
                 const id = `${uid}-band-${theme.key}-${i}`;
                 const name = factorName(indicator, factor);
                 return (
-                  <g key={factor.factor} style={{ animationDelay: `${(settlingRef.current ? SETTLE_BANDS_DELAY_MS : 250) + i * 140}ms` }} className="wheel-band">
+                  <g key={factor.factor} style={{ animationDelay: `${SETTLE_BANDS_DELAY_MS + i * 140}ms` }} className="wheel-band">
                     <path
                       d={sectorPath(inner, outer, centre, BAND.corner)}
                       fill={themeBg(theme.key)}
@@ -336,6 +300,7 @@ export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, has
             </g>
           );
         })}
+        </g>
       </svg>
 
       {/* ----- Centre: a small copy of the illustration above the indicator text ----- */}

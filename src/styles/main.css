@@ -6,6 +6,21 @@
 @import 'tailwindcss';
 @import './tokens.css';
 
+/* ===== Fonts ============================================================= */
+/* Rubik Doodle Shadow draws only the Vision page's title shadow, so it is cut down to
+   the letters of "Streets for Thriving Lives" (24 KB instead of 210 KB). If the title
+   changes, regenerate it from @fontsource/rubik-doodle-shadow with fonttools:
+   pyftsubset rubik-doodle-shadow-latin-400-normal.woff2 --text="<title>" --flavor=woff2
+     --layout-features='kern,liga' --output-file=src/assets/fonts/rubik-doodle-shadow-title.woff2
+   (missing letters fall back to Rubik). */
+@font-face {
+  font-family: 'Rubik Doodle Shadow';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/rubik-doodle-shadow-title.woff2') format('woff2');
+}
+
 /* ===== Base ============================================================== */
 @layer base {
   html {
@@ -402,24 +417,204 @@
     opacity: 1;
   }
 
-  /* The opening theme's collapsed lines fade as its factor bands come out (IndicatorWheel). */
+  /* The bottom theme's collapsed lines fade as its factor bands come out; the theme that
+     just left the bottom gets its lines back (IndicatorWheel). */
   .wheel-arc--handoff {
     animation: fade-out 350ms var(--ease-smooth) both;
+  }
+
+  .wheel-arc--return {
+    animation: fade-in 500ms var(--ease-smooth) 200ms both;
   }
 
   .wheel-band {
     animation: band-in var(--duration-fade) var(--ease-smooth) both;
   }
 
+  /* Each band slides 10px inwards into place, along its theme's outward direction
+     (--ox, --oy), so it reads right however far the wheel has turned. */
   @keyframes band-in {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translate(calc(var(--ox, 0) * 10px), calc(var(--oy, 1) * 10px));
     }
   }
 
   .wheel-arrow {
     @apply absolute flex size-12 items-center justify-center rounded-full text-text-muted hover:scale-110 hover:text-text active:scale-95;
     transition: transform 300ms var(--ease-smooth), opacity 300ms var(--ease-smooth);
+  }
+
+  /* ===== Themes & Factors page =========================================== */
+  /* Figma: Wireframe - 51 (file BWfZznPABe6QYhxxBGhOdp, node 6917:5927). */
+  /* Spacing as in Figma (100px above the title, 87px below it) on large windows,
+     tightening a little on smaller ones. */
+  .themes-hero {
+    @apply mx-auto flex flex-col items-center px-6;
+    padding-top: clamp(4.5rem, 7vw, 6.25rem);
+  }
+
+  .themes-hero__title {
+    @apply w-column max-w-full text-center font-heading text-h3 font-semibold text-text;
+  }
+
+  /* The wheel's size: 62% of the window's width, up to Figma's 942 × 934, and never
+     taller than the window (less a 24px margin each side), since it holds still in view. */
+  .themes-wheel-track {
+    --wheel-w: min(942px, 62vw, calc((100svh - 3rem) * 942 / 934));
+    --wheel-h: calc(var(--wheel-w) * 934 / 942);
+    @apply relative mx-auto;
+    width: var(--wheel-w);
+    height: calc(var(--wheel-h) + var(--swap)); /* the extra scroll is where it changes */
+    margin-top: clamp(2.5rem, 6vw, 5.4375rem);
+  }
+
+  /* Holds still, centred in the window, while the track scrolls past (ThemesWheel). */
+  .themes-wheel {
+    @apply sticky aspect-[942/934] w-full;
+    top: max(1.5rem, calc((100svh - var(--wheel-h)) / 2));
+  }
+
+  /* Parts are placed in % of the wheel's box (the right-hand collages reach a little
+     past it, as in Figma). */
+  .themes-wheel__part {
+    @apply pointer-events-none absolute h-auto max-w-none select-none;
+  }
+
+  /* The collages fade and drift, and the factor bands come in, as the page scrolls:
+     ThemesWheel sets each one's opacity and transform. They start as the collage wheel. */
+  .themes-wheel__collage {
+    will-change: opacity, transform;
+  }
+
+  .themes-wheel__factors {
+    @apply pointer-events-none absolute inset-0 h-full w-full overflow-visible;
+  }
+
+  .themes-wheel__band {
+    opacity: 0;
+  }
+
+  /* Side nav (sticky) beside the 640px text column. 288px (Figma: 257px), so the
+     longest theme name stays on one line even in bold when it's the current section. */
+  .themes-guide {
+    @apply mx-auto mt-[160px] flex max-w-[calc(1120px+3rem)] items-start justify-between gap-12 px-6 pb-40; /* 1120px inside the padding */
+  }
+
+  .themes-nav {
+    @apply sticky top-0 w-[288px] shrink-0 py-[120px];
+    margin-top: -120px; /* the padding is for when it sticks; it starts level with the content */
+  }
+
+  .themes-nav__list {
+    @apply flex flex-col gap-4;
+  }
+
+  .themes-nav__link {
+    @apply flex rounded-[12px] p-4 text-[0.875rem] leading-6 font-medium whitespace-nowrap text-text;
+    transition:
+      background-color 300ms var(--ease-smooth),
+      color 300ms var(--ease-smooth);
+  }
+
+  .themes-nav__link:hover {
+    @apply bg-bg;
+  }
+
+  /* Current section: the theme's colour (the darker one, so white text stays readable). */
+  .themes-nav__link[aria-current] {
+    @apply font-extrabold text-white;
+    background-color: var(--theme-colour, var(--color-text));
+  }
+
+  /* Below the drawer breakpoint (960px, src/config/layout.js) the side nav leaves the
+     layout and becomes a drawer (ThemesNav); the text column is centred. */
+  @media (max-width: 959.98px) {
+    .themes-guide {
+      @apply justify-center;
+    }
+
+    .themes-nav {
+      @apply static w-auto p-0;
+      margin-top: 0;
+    }
+  }
+
+  .themes-drawer {
+    @apply fixed inset-y-0 left-0 z-40 w-[min(20rem,85vw)] bg-white shadow-[0_0_32px_rgb(23_37_91/0.12)];
+    translate: -100% 0;
+    transition: translate var(--duration-move) var(--ease-smooth);
+  }
+
+  .themes-drawer--open {
+    translate: 0 0;
+  }
+
+  .themes-drawer__panel {
+    @apply h-full overflow-y-auto overscroll-contain px-4 pt-[84px] pb-6;
+  }
+
+  /* The tab stays on the drawer's outer edge, so it is visible while closed. */
+  .themes-drawer__tab {
+    @apply absolute top-[96px] left-full flex items-center gap-1 rounded-r-full bg-bg py-3 pr-4 pl-3 text-nav font-semibold whitespace-nowrap text-text shadow-[4px_0_16px_rgb(23_37_91/0.08)] hover:bg-bg-alt;
+  }
+
+  .themes-drawer__scrim {
+    @apply fixed inset-0 z-30 bg-text/10;
+    animation: fade-in 400ms var(--ease-smooth) both;
+  }
+
+  /* Text column: the spec's 640px column (--container-column). */
+  .themes-content {
+    @apply flex w-column max-w-full flex-col gap-[100px];
+  }
+
+  .themes-overview {
+    @apply flex flex-col gap-[60px];
+    scroll-margin-top: 100px;
+  }
+
+  .themes-overview__block {
+    @apply flex flex-col gap-6;
+  }
+
+  .themes-overview__title {
+    @apply font-heading text-h3 font-semibold text-text;
+  }
+
+  .themes-prose {
+    @apply flex flex-col gap-[18px] text-body text-pretty text-text;
+  }
+
+  .themes-prose strong {
+    @apply font-bold;
+  }
+
+  .theme-section {
+    @apply flex flex-col gap-[60px];
+    scroll-margin-top: 100px;
+  }
+
+  #theme-sections {
+    @apply flex flex-col gap-[100px];
+  }
+
+  .theme-section__title {
+    @apply rounded-[12px] px-6 py-3 font-heading text-h3 font-semibold;
+    color: var(--theme-text);
+    background-color: color-mix(in srgb, var(--theme-bg) 25%, transparent);
+  }
+
+  .theme-section__factors {
+    @apply flex flex-col gap-9;
+  }
+
+  .factor__name {
+    @apply px-8 font-heading text-h4 font-semibold;
+    color: var(--theme-text);
+  }
+
+  .factor__summary {
+    @apply flex flex-col gap-[18px] px-8 py-6 text-body text-pretty text-text;
   }
 }
