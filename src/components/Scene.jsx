@@ -32,7 +32,11 @@ const LABEL_BLOB =
 // Indicator text under an illustration. Text keeps its size at any scene scale.
 // While visible, the label holds the hover for its illustration, so the pointer can rest on it.
 function HoverLabel({ slot, text, hint, chevron = false, visible, scale }) {
-  const centreX = Math.min(Math.max(slot.x + slot.width / 2, LABEL_WIDTH / 2), SCENE_BOX.width - LABEL_WIDTH / 2);
+  // The label keeps its on-screen size at any scene scale (counter-scaled), but never gets
+  // wider than the scene on screen; it is kept inside the scene using its real half-width.
+  const labelWidth = Math.min(LABEL_WIDTH, SCENE_BOX.width * scale); // px on screen
+  const half = labelWidth / 2 / scale; // in scene units
+  const centreX = Math.min(Math.max(slot.x + slot.width / 2, half), SCENE_BOX.width - half);
   return (
     <div
       className="hover-label"
@@ -44,6 +48,7 @@ function HoverLabel({ slot, text, hint, chevron = false, visible, scale }) {
         top: slot.y + slot.height - LABEL_OVERLAP,
         translate: `0 var(--parallax-${slot.indicator}, 0px)`,
         '--label-scale': 1 / scale,
+        maxWidth: labelWidth,
       }}
     >
       <svg viewBox="0 0 300 70" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden="true">

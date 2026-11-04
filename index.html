@@ -24,8 +24,9 @@
     <main>
       <!-- ===== SECTION: Hero =====
            Figma: Landing page-the vision (file BWfZznPABe6QYhxxBGhOdp, node 6922:6281).
-           All positions inside the 640px column are taken from the design. -->
-      <section id="hero" class="mx-auto w-column pt-[102px]" aria-labelledby="hero-title">
+           On wider screens all positions inside the 640px column are taken from the design
+           (main.css, .hero-*); below 700px the callouts stack and wrap. -->
+      <section id="hero" class="hero" aria-labelledby="hero-title">
         <div class="flex flex-col items-center gap-2" data-rise>
           <h1 id="hero-title" class="hero-title">Streets for <br />Thriving Lives</h1>
           <p class="hero-subtitle text-center">
@@ -34,33 +35,23 @@
         </div>
 
         <!-- Callouts over the dotted line. The callouts float with a slight parallax (hero.js). -->
-        <div class="relative mt-8 h-[430px]">
-          <img
-            class="absolute top-[-25px] left-[282px] h-[334px] w-[84.6px]"
-            src="/images/hero-dotted-line.svg"
-            alt=""
-            data-rise
-          />
+        <div class="hero-callouts">
+          <img class="hero-line" src="/images/hero-dotted-line.svg" alt="" data-rise />
 
-          <div class="absolute inset-0" data-parallax="0.06" data-rise>
-            <div class="absolute top-[16px] left-[23px] flex h-[82.4px] w-[587.8px] items-center justify-center">
-              <p class="callout relative -rotate-2">What if our streets and neighbourhoods worked for everyone?</p>
+          <div class="hero-callout-layer" data-parallax="0.06" data-rise>
+            <div class="hero-callout-row hero-callout-row--first">
+              <p class="callout -rotate-2">What if our streets and neighbourhoods worked for everyone?</p>
             </div>
           </div>
 
-          <div class="absolute inset-0" data-parallax="0.1" data-rise>
-            <div class="absolute top-[122.75px] left-[98px] flex h-[77.4px] w-[443.9px] items-center justify-center">
-              <p class="callout relative rotate-2">What would you notice differently if they did?</p>
+          <div class="hero-callout-layer" data-parallax="0.1" data-rise>
+            <div class="hero-callout-row hero-callout-row--second">
+              <p class="callout rotate-2">What would you notice differently if they did?</p>
             </div>
           </div>
 
-          <img
-            class="absolute top-[315px] left-[calc(50%+0.5px)] h-[22px] w-[39px] -translate-x-1/2"
-            src="/images/hero-scroll-cue.svg"
-            alt=""
-            data-rise
-          />
-          <p class="hero-prompt absolute top-[356px] left-1/2 w-[480px] -translate-x-1/2" data-rise>
+          <img class="hero-cue" src="/images/hero-scroll-cue.svg" alt="" data-rise />
+          <p class="hero-prompt" data-rise>
             Scroll to journey the vision and click on parts to read the stories that indicate what
             thriving feels like
           </p>

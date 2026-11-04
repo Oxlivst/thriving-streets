@@ -88,17 +88,24 @@ export default function SectionNav({ items }) {
         <div id="side-drawer-panel" className="side-drawer__panel" inert={!open}>
           {list}
         </div>
+        {/* Hamburger while closed (on the window's edge); × while open (inside the drawer's corner). */}
         <button
           ref={tabRef}
           type="button"
           className="side-drawer__tab"
           aria-expanded={open}
           aria-controls="side-drawer-panel"
+          aria-label={open ? 'Close contents' : 'Open contents'}
           onClick={() => setOpen((value) => !value)}
         >
-          <span>{open ? 'Close' : 'Contents'}</span>
-          <svg viewBox="0 0 24 24" className={`size-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true">
-            <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <svg viewBox="0 0 24 24" className="size-6" aria-hidden="true">
+            <path
+              d={open ? 'M6.5 6.5l11 11M17.5 6.5l-11 11' : 'M4 7h16M4 12h16M4 17h16'}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           </svg>
         </button>
       </div>

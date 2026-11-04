@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { DRAWER_BELOW } from '../config/layout.js';
 
-// True while the window is narrower than the drawer breakpoint.
-export default function useNarrow() {
-  const query = `(max-width: ${DRAWER_BELOW - 0.02}px)`;
+// True while the window is narrower than `below` (default: the drawer breakpoint).
+export default function useNarrow(below = DRAWER_BELOW) {
+  const query = `(max-width: ${below - 0.02}px)`;
   const [narrow, setNarrow] = useState(() => window.matchMedia(query).matches);
   useEffect(() => {
     const mq = window.matchMedia(query);
