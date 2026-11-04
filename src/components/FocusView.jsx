@@ -64,6 +64,7 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
   const [closing, setClosing] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false); // tapped open (touch); hover and focus open it via CSS
   const helpRef = useRef(null);
+  const [helpInput, setHelpInput] = useState('mouse'); // how the pill was last pressed: mouse, pen or touch
   // While it's tapped open, a tap anywhere outside the pill closes it.
   useEffect(() => {
     if (!helpOpen) return;
@@ -336,9 +337,15 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
                 ref={helpRef}
                 className="focus-help"
                 data-open={helpOpen}
+                data-input={helpInput}
                 style={{ '--hint-max': `${hintMaxWidth}px` }}
+                // The click event can't be trusted to say how it was made (iPad Safari reports a
+                // tap as a mouse click), so pointerdown, which does, records it first.
+                onPointerDown={(e) => setHelpInput(e.pointerType || 'mouse')}
                 onClick={(e) => {
-                  if (e.nativeEvent.pointerType === 'mouse' || e.target.closest('a')) return;
+                  if (e.target.closest('a')) return;
+                  const keyboard = e.detail === 0;
+                  if (!keyboard && helpInput === 'mouse') return; // mouse: hover does it
                   setHelpOpen((open) => !open);
                 }}
               >

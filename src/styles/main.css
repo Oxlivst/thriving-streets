@@ -393,7 +393,9 @@
   /* Expands while hovered or focused (the link inside stays reachable by keyboard),
      or when the ? is tapped on touch screens (data-open). */
   @media (hover: hover) {
-    .focus-help:hover .focus-help__text {
+    /* Not after a tap: an iPad with a trackpad counts as hover-capable, but its taps would
+       still leave :hover stuck on. */
+    .focus-help:not([data-input='touch']):not([data-input='pen']):hover .focus-help__text {
       @apply opacity-100;
       max-width: var(--hint-max, 560px);
       max-height: 6rem;
