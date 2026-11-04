@@ -216,7 +216,8 @@
     container-type: inline-size;
   }
 
-  /* Body-strong, the same size as the hero prompt. The scene box can be narrower than the
+  /* Main scroll: body-strong, the same size as the hero prompt (the focus view's titles
+     scale down instead, below). The scene box can be narrower than the
      title, so the title may spread past the art (centred on it) and only wraps when the
      screen itself is too narrow. */
   .scene-title {
@@ -348,6 +349,8 @@
     width: max-content;
     min-width: 100%;
     max-width: var(--column-width);
+    /* Smaller than on the main scroll: eases from 18px down to 16px with the scene's width. */
+    font-size: clamp(1rem, 3.6cqi, var(--text-body));
   }
 
   /* The scene column glides in from the page centre to its place on the left. */
@@ -430,6 +433,8 @@
     width: max-content;
     min-width: 100%;
     max-width: var(--column-width);
+    /* Smaller than on the main scroll: eases from 18px down to 16px with the scene's width. */
+    font-size: clamp(1rem, 3.6cqi, var(--text-body));
   }
 
   .focus-close {
