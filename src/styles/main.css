@@ -114,7 +114,7 @@
   }
 
   .hero-subtitle {
-    @apply font-heading text-h3 font-semibold text-text;
+    @apply font-heading text-h2 font-semibold text-text;
   }
 
   .callout {
@@ -434,7 +434,7 @@
   }
 
   .themes-hero__title {
-    @apply w-column max-w-full text-center font-heading text-h3 font-semibold text-text;
+    @apply w-column max-w-full text-center font-heading text-h1 font-semibold text-text;
   }
 
   /* The wheel's size: 62% of the window's width, up to Figma's 942 × 934, and never
@@ -558,7 +558,7 @@
   }
 
   .themes-overview__title {
-    @apply font-heading text-h3 font-semibold text-text;
+    @apply font-heading text-h2 font-semibold text-text;
   }
 
   .themes-prose {
@@ -579,7 +579,7 @@
   }
 
   .theme-section__title {
-    @apply rounded-[12px] px-6 py-3 font-heading text-h3 font-semibold;
+    @apply rounded-[12px] px-6 py-3 font-heading text-h2 font-semibold;
     color: var(--theme-text);
     background-color: color-mix(in srgb, var(--theme-bg) 25%, transparent);
   }
@@ -589,7 +589,7 @@
   }
 
   .factor__name {
-    @apply px-8 font-heading text-h4 font-semibold;
+    @apply px-8 font-heading text-h3 font-semibold;
     color: var(--theme-text);
   }
 
