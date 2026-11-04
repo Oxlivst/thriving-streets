@@ -83,7 +83,7 @@ export default function VisionExplorer() {
               selected={null}
               hovered={selected === null ? hovered : null}
               onHover={setHovered}
-              onSelect={(n) => select(n)}
+              onSelect={select}
             />
           </div>
         ))}
@@ -95,7 +95,7 @@ export default function VisionExplorer() {
           selected={selected}
           hovered={hovered}
           onHover={setHovered}
-          onSelect={(n) => select(n)}
+          onSelect={select}
           onPrev={position > 0 ? () => goTo(-1) : undefined}
           onNext={position < order.length - 1 ? () => goTo(1) : undefined}
           onClose={close}

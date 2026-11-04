@@ -45,6 +45,7 @@ const STEP_PX = 480; // scroll distance per indicator (the BBC example uses abou
 // A new wheel appears this far off its resting angle and eases into place before its
 // factors come out (a hint that the wheel turns).
 const SETTLE_DEG = 14;
+const STACK_GAP = 32; // below 960px: space between the nav and the scene's title
 const FADE_MS = 600; // wheel crossfade (the longer of the in / out animations)
 const SMOOTH_SCROLL_MAX_MS = 1500; // a programmatic smooth scroll is assumed done after this
 
@@ -81,9 +82,9 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
   // It takes up to 46% of the height (title, gap, illustration); the wheel gets the rest.
   const stackSceneScale =
     narrow && wheelColumnWidth
-      ? Math.min(wheelColumnWidth / SCENE_BOX.width, Math.max(0.25, (paneHeight * 0.46 - 72) / SCENE_BOX.height))
+      ? Math.min(wheelColumnWidth / SCENE_BOX.width, Math.max(0.25, (paneHeight * 0.46 - 72 - STACK_GAP) / SCENE_BOX.height))
       : 0;
-  const stackSceneHeight = narrow ? 48 + 24 + SCENE_BOX.height * stackSceneScale : 0;
+  const stackSceneHeight = narrow ? STACK_GAP + 48 + 24 + SCENE_BOX.height * stackSceneScale : 0;
   // The ? / × row's centre line, from the top of the wheel column: the ring starts on it.
   const headerLine = narrow ? stackSceneHeight + 8 + HEADER_HEIGHT / 2 : HEADER_CENTRE_Y - NAV_HEIGHT;
   // The wheel fits its column's width, and the window's height (it no longer scrolls on its own).
@@ -198,6 +199,10 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
     setClosing(true);
     setTimeout(onClose, 450);
   };
+  // The same function on every render, so the (memoised) scenes don't re-render for it.
+  const requestCloseRef = useRef(requestClose);
+  requestCloseRef.current = requestClose;
+  const dismiss = useCallback(() => requestCloseRef.current(), []);
 
   // Esc closes the focus view.
   useEffect(() => {
@@ -214,7 +219,7 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
     hovered,
     onHover,
     onSelect,
-    onDismiss: requestClose,
+    onDismiss: dismiss,
   };
 
   return createPortal(
@@ -289,7 +294,10 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
           >
             {/* Below 960px: the selected indicator's scene, above the wheel */}
             {narrow && activeScene && (
-              <div className="focus-stack__scene" style={{ height: stackSceneHeight, '--column-width': `${wheelColumnWidth}px` }}>
+              <div
+                className="focus-stack__scene"
+                style={{ height: stackSceneHeight, '--column-width': `${wheelColumnWidth}px`, '--stack-gap': `${STACK_GAP}px` }}
+              >
                 <Scene scene={activeScene} scale={stackSceneScale} {...sceneProps} />
               </div>
             )}
