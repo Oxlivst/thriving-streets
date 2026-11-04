@@ -437,6 +437,11 @@
     @apply w-column max-w-full text-center font-heading text-h1 font-semibold text-text;
   }
 
+  /* Body copy under the title: 480px wide, like the Vision page's scroll prompt. */
+  .themes-hero__intro {
+    @apply mt-4 w-[480px] max-w-full text-center text-body text-pretty text-text;
+  }
+
   /* The wheel's size: 62% of the window's width, up to Figma's 942 × 934, and never
      taller than the window (less a 24px margin each side), since it holds still in view. */
   .themes-wheel-track {
