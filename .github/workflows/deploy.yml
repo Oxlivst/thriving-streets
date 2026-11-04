@@ -3,6 +3,10 @@
 # updates the live site.
 #
 # One-time setup: repo Settings → Pages → Source: "GitHub Actions".
+#
+# Preview: if a Different-scroll branch exists, it's built too and published at
+# /different-scroll/ (hidden from search engines). Pushing to that branch re-runs this
+# deploy (its preview.yml). Delete the branch, or this step, to take the preview down.
 
 name: Deploy to GitHub Pages
 
@@ -40,6 +44,21 @@ jobs:
           # The site is served from the root of its own subdomain
           # (thrivingstreets.oxfordshireliveablestreets.com, set in Settings → Pages).
           BASE_PATH: /
+
+      - name: Build the Different-scroll preview (at /different-scroll/), if the branch exists
+        run: |
+          if ! git ls-remote --exit-code --heads origin Different-scroll > /dev/null; then
+            echo "No Different-scroll branch: no preview."
+            exit 0
+          fi
+          git fetch --depth 1 origin Different-scroll
+          git worktree add "$RUNNER_TEMP/preview" FETCH_HEAD
+          cd "$RUNNER_TEMP/preview"
+          npm ci
+          BASE_PATH=/different-scroll/ npm run build
+          # Keep the preview out of search results.
+          find dist -name '*.html' -exec sed -i 's|<head>|<head><meta name="robots" content="noindex" />|' {} +
+          cp -r dist "$GITHUB_WORKSPACE/dist/different-scroll"
 
       - uses: actions/upload-pages-artifact@v5
         with:
