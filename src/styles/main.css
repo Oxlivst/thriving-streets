@@ -122,10 +122,10 @@
   }
 
   /* ===== Hero ============================================================ */
-  /* Knewave, upper case, in its own blue. The box is sized in em (636 × 207 at 84px),
+  /* Knewave, upper case, in the primary text colour. The box is sized in em (636 × 207 at 84px),
      so it follows the fluid title size; Figma has the text 4px right of centre. */
   .hero-title {
-    @apply relative mx-auto h-[2.464em] w-[7.571em] translate-x-[0.024em] text-center font-title text-h1-home whitespace-nowrap text-hero-title uppercase;
+    @apply relative mx-auto h-[2.464em] w-[7.571em] translate-x-[0.024em] text-center font-title text-h1-home whitespace-nowrap text-text uppercase;
   }
 
   .hero-subtitle {
