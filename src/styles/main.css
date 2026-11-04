@@ -172,7 +172,7 @@
   }
 
   .hero-prompt {
-    @apply absolute top-[297px] left-1/2 w-[480px] -translate-x-1/2 text-center text-body text-text;
+    @apply absolute top-[297px] left-1/2 w-[480px] -translate-x-1/2 text-center text-body font-bold text-text;
   }
 
   /* Phones (below 700px): the hero fills the screen width. The title and subtitle shrink,
@@ -216,11 +216,14 @@
     container-type: inline-size;
   }
 
-  /* One line wherever it fits: the title eases from 18px down to 16px with the scene's
-     width (it needs ~27× its font size), and only wraps when even 16px doesn't fit. */
+  /* Body-strong, the same size as the hero prompt. The scene box can be narrower than the
+     title, so the title may spread past the art (centred on it) and only wraps when the
+     screen itself is too narrow. */
   .scene-title {
-    @apply text-center text-body font-bold text-balance text-text;
-    font-size: clamp(1rem, 3.6cqi, var(--text-body));
+    @apply relative left-1/2 -translate-x-1/2 text-center text-body font-bold text-balance text-text;
+    width: max-content;
+    min-width: 100%;
+    max-width: calc(100vw - 2rem);
   }
 
   /* An illustration slot: positioned absolutely inside its scene box. */
