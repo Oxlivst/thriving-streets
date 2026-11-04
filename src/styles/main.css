@@ -481,32 +481,37 @@
 
   /* Side nav (sticky) beside the 640px text column. 288px (Figma: 257px), so the
      longest theme name stays on one line even in bold when it's the current section. */
-  .themes-guide {
+  .page-guide {
     @apply mx-auto mt-[160px] flex max-w-[calc(1120px+3rem)] items-start justify-between gap-12 px-6 pb-40; /* 1120px inside the padding */
   }
 
-  .themes-nav {
+  .side-nav {
     @apply sticky top-0 w-[288px] shrink-0 py-[120px];
     margin-top: -120px; /* the padding is for when it sticks; it starts level with the content */
   }
 
-  .themes-nav__list {
+  .side-nav__list {
     @apply flex flex-col gap-4;
   }
 
-  .themes-nav__link {
-    @apply flex rounded-[12px] p-4 text-[0.875rem] leading-6 font-medium whitespace-nowrap text-text;
+  .side-nav__link {
+    @apply flex min-w-0 rounded-[12px] p-4 text-[0.875rem] leading-6 font-medium whitespace-nowrap text-text;
     transition:
       background-color 300ms var(--ease-smooth),
       color 300ms var(--ease-smooth);
   }
 
-  .themes-nav__link:hover {
+  /* Long labels stay on one line, cut short with an ellipsis (the full text is the link's title). */
+  .side-nav__label {
+    @apply min-w-0 overflow-hidden text-ellipsis;
+  }
+
+  .side-nav__link:hover {
     @apply bg-bg;
   }
 
   /* Current section: the theme's colour (the darker one, so white text stays readable). */
-  .themes-nav__link[aria-current] {
+  .side-nav__link[aria-current] {
     @apply font-extrabold text-white;
     background-color: var(--theme-colour, var(--color-text));
   }
@@ -514,42 +519,42 @@
   /* Below the drawer breakpoint (960px, src/config/layout.js) the side nav leaves the
      layout and becomes a drawer (ThemesNav); the text column is centred. */
   @media (max-width: 959.98px) {
-    .themes-guide {
+    .page-guide {
       @apply justify-center;
     }
 
-    .themes-nav {
+    .side-nav {
       @apply static w-auto p-0;
       margin-top: 0;
     }
   }
 
-  .themes-drawer {
+  .side-drawer {
     @apply fixed inset-y-0 left-0 z-40 w-[min(20rem,85vw)] bg-white shadow-[0_0_32px_rgb(23_37_91/0.12)];
     translate: -100% 0;
     transition: translate var(--duration-move) var(--ease-smooth);
   }
 
-  .themes-drawer--open {
+  .side-drawer--open {
     translate: 0 0;
   }
 
-  .themes-drawer__panel {
+  .side-drawer__panel {
     @apply h-full overflow-y-auto overscroll-contain px-4 pt-[84px] pb-6;
   }
 
   /* The tab stays on the drawer's outer edge, so it is visible while closed. */
-  .themes-drawer__tab {
+  .side-drawer__tab {
     @apply absolute top-[96px] left-full flex items-center gap-1 rounded-r-full bg-bg py-3 pr-4 pl-3 text-nav font-semibold whitespace-nowrap text-text shadow-[4px_0_16px_rgb(23_37_91/0.08)] hover:bg-bg-alt;
   }
 
-  .themes-drawer__scrim {
+  .side-drawer__scrim {
     @apply fixed inset-0 z-30 bg-text/10;
     animation: fade-in 400ms var(--ease-smooth) both;
   }
 
   /* Text column: the spec's 640px column (--container-column). */
-  .themes-content {
+  .page-guide__content {
     @apply flex w-column max-w-full flex-col gap-[100px];
   }
 
@@ -566,11 +571,11 @@
     @apply font-heading text-h2 font-semibold text-text;
   }
 
-  .themes-prose {
+  .prose {
     @apply flex flex-col gap-[18px] text-body text-pretty text-text;
   }
 
-  .themes-prose strong {
+  .prose strong {
     @apply font-bold;
   }
 
@@ -600,5 +605,118 @@
 
   .factor__summary {
     @apply flex flex-col gap-[18px] px-8 py-6 text-body text-pretty text-text;
+  }
+
+  /* ===== About page ====================================================== */
+  /* Figma: Wireframe - 56 (file BWfZznPABe6QYhxxBGhOdp, node 6923:6337). Each question is a
+     <details> section: its header bar (the summary) opens and closes it. */
+  .about-section {
+    scroll-margin-top: 100px;
+  }
+
+  .about-section__header {
+    @apply flex cursor-pointer list-none items-center gap-2.5 rounded-[12px] bg-bg-alt px-6 py-3 text-text;
+    transition: background-color 300ms var(--ease-smooth);
+  }
+
+  .about-section__header::-webkit-details-marker {
+    display: none;
+  }
+
+  .about-section__header:hover {
+    background-color: color-mix(in srgb, var(--color-bg-alt) 80%, var(--color-text) 6%);
+  }
+
+  .about-section__title {
+    @apply min-w-0 flex-1 font-heading text-h2 font-semibold;
+  }
+
+  /* Chevron points up while the section is open, down while it's closed. */
+  .about-section__chevron {
+    @apply size-6 shrink-0 fill-none stroke-current;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: rotate 300ms var(--ease-smooth);
+  }
+
+  .about-section:not([open]) .about-section__chevron {
+    rotate: 180deg;
+  }
+
+  .about-section__body {
+    @apply mt-12 px-8;
+  }
+
+  /* The section's one-line summary, in bold above the text. */
+  .about-section__lead {
+    @apply font-bold;
+  }
+
+  .about-subheading {
+    @apply mt-4 font-heading text-h3 font-semibold text-text;
+  }
+
+  .prose a {
+    @apply font-semibold underline decoration-1 underline-offset-2 hover:decoration-2;
+  }
+
+  .prose-list {
+    @apply flex list-disc flex-col gap-2 pl-6;
+  }
+
+  .prose-list--numbered {
+    @apply list-decimal;
+  }
+
+  .prose-list--plain {
+    @apply list-none gap-[18px] pl-0;
+  }
+
+  /* "Read more": the deeper layer inside a section, closed to start with. */
+  .read-more__toggle {
+    @apply inline-flex cursor-pointer list-none items-center gap-1 font-bold underline decoration-1 underline-offset-2 hover:decoration-2;
+  }
+
+  .read-more__toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .read-more__toggle::after {
+    content: '';
+    @apply inline-block size-2 border-r-2 border-b-2 border-current;
+    margin-left: 0.4rem;
+    rotate: 45deg;
+    translate: 0 -0.15rem;
+    transition: rotate 300ms var(--ease-smooth);
+  }
+
+  .read-more[open] > .read-more__toggle::after {
+    rotate: 225deg;
+    translate: 0 0.15rem;
+  }
+
+  .read-more__body {
+    @apply mt-[18px];
+  }
+
+  .about-figure {
+    @apply my-2 flex flex-col gap-2;
+  }
+
+  .about-figure img {
+    @apply h-auto w-full rounded-[12px];
+  }
+
+  .about-figure figcaption {
+    @apply text-label-hint text-text-muted;
+  }
+
+  .about-quote {
+    @apply flex flex-col gap-2 border-l-4 border-bg-tertiary pl-4 italic;
+  }
+
+  .about-quote footer {
+    @apply not-italic text-text-muted;
   }
 }

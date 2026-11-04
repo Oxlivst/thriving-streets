@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-// One HTML entry per page. about.html is added in a later phase.
+// One HTML entry per page.
 // BASE_PATH is the folder the site is served from: "/" locally, "/thriving-streets/"
 // on GitHub Pages (set by .github/workflows/deploy.yml).
 export default defineConfig({
@@ -14,6 +14,7 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         themes: resolve(import.meta.dirname, 'themes.html'),
+        about: resolve(import.meta.dirname, 'about.html'),
       },
     },
   },

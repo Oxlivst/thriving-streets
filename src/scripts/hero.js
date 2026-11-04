@@ -1,16 +1,9 @@
-// Hero behaviour (spec INT-01):
-// - elements marked [data-rise] ease into place from a slight offset on load
-// - elements marked [data-parallax="<factor>"] drift slightly with scroll
+// Hero behaviour (spec INT-01): elements marked [data-parallax="<factor>"] drift
+// slightly with scroll. (The load entrance, [data-rise], is shared: src/scripts/rise.js.)
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export function initHero() {
-  const risers = document.querySelectorAll('[data-rise]');
-  risers.forEach((el, i) => {
-    el.style.setProperty('--rise-delay', `${150 + i * 160}ms`);
-    el.classList.add('rise-in');
-  });
-
   if (reduceMotion) return;
 
   const layers = [...document.querySelectorAll('[data-parallax]')];
