@@ -9,7 +9,7 @@ import ThemesWheel from './components/ThemesWheel.jsx';
 const wheelRoot = document.getElementById('themes-wheel');
 if (wheelRoot) createRoot(wheelRoot).render(<ThemesWheel />);
 
-const navRoot = document.getElementById('themes-nav');
+const navRoot = document.getElementById('side-nav');
 if (navRoot) createRoot(navRoot).render(<ThemesNav />);
 
 const sectionsRoot = document.getElementById('theme-sections');

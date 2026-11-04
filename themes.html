@@ -28,23 +28,23 @@
            Figma positions. Scrolling on turns it into the factor version.
            Files: public/illustrations/themes-wheel/ (WebP collages at 1x and 2x). -->
       <section class="themes-hero" aria-labelledby="themes-title">
-        <h1 id="themes-title" class="themes-hero__title">What makes our streets and neighbourhoods great to live in?</h1>
-        <p class="themes-hero__intro">Following are the themes and factors to consider for enabling the vision of thriving streets</p>
+        <h1 id="themes-title" class="themes-hero__title" data-rise>What makes our streets and neighbourhoods great to live in?</h1>
+        <p class="themes-hero__intro" data-rise>Following are the themes and factors to consider for enabling the vision of thriving streets</p>
         <!-- Rendered by React: src/components/ThemesWheel.jsx (the collage, then the factors on scroll) -->
-        <div id="themes-wheel" class="w-full"></div>
+        <div id="themes-wheel" class="w-full" data-rise></div>
       </section>
 
       <!-- ===== SECTION: Guide (side nav + content) =====
            The side nav and the theme sections are rendered by React from the data:
            src/components/ThemesGuide.jsx · Data: data/indicator-mapping.csv -->
-      <div class="themes-guide">
-        <nav class="themes-nav" aria-label="On this page" id="themes-nav"></nav>
+      <div class="page-guide">
+        <nav class="side-nav" aria-label="On this page" id="side-nav"></nav>
 
-        <div class="themes-content">
+        <div class="page-guide__content">
           <section id="overview" class="themes-overview" aria-label="Overview">
             <div class="themes-overview__block">
               <h2 class="themes-overview__title">What are themes and factors?</h2>
-              <div class="themes-prose">
+              <div class="prose">
                 <p>Everything people told us in the workshops is organised into six themes and the factors within them.</p>
                 <p>
                   <strong>Themes:</strong> are the big areas of life that make streets and neighbourhoods thrive, from Living with
@@ -70,7 +70,7 @@
 
             <div class="themes-overview__block">
               <h2 class="themes-overview__title">How did we come up with them?</h2>
-              <div class="themes-prose">
+              <div class="prose">
                 <p>
                   The themes and factors came entirely from what people said. We didn’t start with a framework and sort their words
                   into it.
