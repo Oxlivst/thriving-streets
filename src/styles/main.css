@@ -339,6 +339,9 @@
   /* Beside the wheel the scene is narrower than its column; its title may use the
      column's spare width to stay on one line (centred over the art when it fits). */
   .focus-scenes--beside .scene-title {
+    /* Centred on the scene (which is centred in the column), so a title wider than the art
+       grows equally both ways and never runs past the column into the help pill. */
+    @apply relative left-1/2 -translate-x-1/2;
     width: max-content;
     min-width: 100%;
     max-width: var(--column-width);
@@ -360,10 +363,9 @@
     @apply flex size-12 shrink-0 items-center justify-center rounded-full;
   }
 
-  /* Hover only where there's a real pointer: on touch screens a tap leaves :hover stuck on,
-     which would hold the pill open after it's tapped closed. */
+  /* Hover only where there's a real pointer (a tap leaves :hover stuck on touch screens).
+     The help pill keeps its light background when it opens; only the close button darkens. */
   @media (hover: hover) {
-    .focus-help:hover,
     .focus-close:hover {
       @apply bg-bg-alt;
     }
