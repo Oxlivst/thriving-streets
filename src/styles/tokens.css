@@ -94,3 +94,20 @@
   --container-content: 1200px;
   --container-column: 640px; /* hero and scene column */
 }
+
+/* ---- Phone type scale (below 700px) ------------------------------------
+   Smaller body copy and headings on phones. The fluid clamps above stop at
+   their 1024px sizes, which are still large on a 375px screen. Every use of
+   the tokens follows; the Vision title has its own phone size (main.css). */
+@media (max-width: 699.98px) {
+  :root {
+    --text-h1: 2rem; /* 32px */
+    --text-h1--line-height: 1.25; /* 40px */
+    --text-h2: 1.5rem; /* 24px */
+    --text-h2--line-height: 1.3333; /* 32px */
+    --text-h3: 1.25rem; /* 20px */
+    --text-h3--line-height: 1.4; /* 28px */
+    --text-body: 1rem; /* 16px */
+    --text-body--line-height: 1.5rem; /* 24px */
+  }
+}

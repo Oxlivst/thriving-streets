@@ -102,6 +102,17 @@
     @apply border-b-2 border-transparent py-2 text-nav text-text-muted transition-colors hover:text-text;
   }
 
+  /* Phones: smaller links, closer together, each on one line. */
+  @media (max-width: 699.98px) {
+    .site-nav {
+      @apply gap-5;
+    }
+
+    .nav-link {
+      @apply text-[0.875rem] leading-5 whitespace-nowrap;
+    }
+  }
+
   .nav-link[aria-current='page'] {
     @apply border-red-1 font-bold text-text;
   }
@@ -117,12 +128,81 @@
     @apply font-heading text-h2 font-semibold text-text;
   }
 
+  .hero {
+    @apply mx-auto w-column max-w-full pt-[102px];
+  }
+
+  /* The callouts, dotted line, scroll cue and prompt, placed as in Figma (640 × 430). */
+  .hero-callouts {
+    @apply relative mt-8 h-[430px];
+  }
+
+  /* Placed from the centre (282px in the 640px column), so the line ends at the cue on any width. */
+  .hero-line {
+    @apply absolute top-[-25px] left-[calc(50%-38px)] h-[334px] w-[84.6px];
+  }
+
+  .hero-callout-layer {
+    @apply absolute inset-0;
+  }
+
+  .hero-callout-row {
+    @apply absolute flex items-center justify-center;
+  }
+
+  .hero-callout-row--first {
+    @apply top-[16px] left-[23px] h-[82.4px] w-[587.8px];
+  }
+
+  .hero-callout-row--second {
+    @apply top-[122.75px] left-[98px] h-[77.4px] w-[443.9px];
+  }
+
   .callout {
-    @apply absolute flex h-[62px] items-center justify-center rounded-[11px] bg-bg-alt px-6 py-4 text-body font-bold whitespace-nowrap text-text;
+    @apply relative flex h-[62px] items-center justify-center rounded-[11px] bg-bg-alt px-6 py-4 text-body font-bold whitespace-nowrap text-text;
+  }
+
+  .hero-cue {
+    @apply absolute top-[315px] left-[calc(50%+0.5px)] h-[22px] w-[39px] -translate-x-1/2;
   }
 
   .hero-prompt {
-    @apply text-center text-body text-hero-prompt;
+    @apply absolute top-[356px] left-1/2 w-[480px] -translate-x-1/2 text-center text-body text-hero-prompt;
+  }
+
+  /* Phones (below 700px): the hero fills the screen width. The title and subtitle shrink,
+     and the callouts stack, wrap their text and sit over the (centred) dotted line. */
+  @media (max-width: 699.98px) {
+    .hero {
+      @apply px-6 pt-16;
+    }
+
+    .hero-title {
+      font-size: clamp(2.25rem, 10.5vw, 4.375rem);
+    }
+
+    .hero-subtitle {
+      @apply text-h3;
+    }
+
+    /* Same height as the design's block, so the dotted line, cue and prompt keep their
+       desktop places (from the centre) and the callouts stack above them. */
+    .hero-callouts {
+      @apply mt-10 flex h-auto min-h-[430px] flex-col items-center gap-10 pt-4;
+    }
+
+    .hero-callout-layer,
+    .hero-callout-row {
+      @apply relative inset-auto h-auto w-full;
+    }
+
+    .callout {
+      @apply mx-auto h-auto max-w-[20rem] px-5 py-3 text-center whitespace-normal;
+    }
+
+    .hero-prompt {
+      @apply relative top-auto left-auto mt-auto w-auto max-w-[20rem] translate-x-0;
+    }
   }
 
   /* ===== Scenes ========================================================== */
@@ -287,26 +367,9 @@
     @apply inline-flex items-center gap-1 font-bold whitespace-nowrap underline decoration-1 underline-offset-2 hover:decoration-2;
   }
 
-  /* Below 960px: the scenes slide in from the left in a drawer. */
-  .focus-drawer {
-    @apply absolute inset-y-0 left-0 z-30 bg-white shadow-[0_0_32px_rgb(23_37_91/0.12)];
-    translate: -100% 0;
-    transition: translate var(--duration-move) var(--ease-smooth);
-  }
-
-  .focus-drawer--open {
-    translate: 0 0;
-  }
-
-  /* The tab stays on the drawer's outer edge, so it is visible while closed;
-     it sits below the ? / × row so it never covers the ? on narrow windows. */
-  .focus-drawer__tab {
-    @apply absolute top-[120px] left-full flex items-center gap-1 rounded-r-full whitespace-nowrap bg-bg py-3 pr-4 pl-3 text-nav font-semibold text-text hover:bg-bg-alt;
-  }
-
-  .focus-drawer__scrim {
-    @apply absolute inset-0 z-20 bg-text/10;
-    animation: fade-in 400ms var(--ease-smooth) both;
+  /* Below 960px: the selected indicator's scene, held still above the wheel (FocusView). */
+  .focus-stack__scene {
+    @apply absolute inset-x-0 top-0 flex justify-center overflow-hidden pt-2;
   }
 
   .focus-close {
@@ -517,14 +580,15 @@
   }
 
   /* Below the drawer breakpoint (960px, src/config/layout.js) the side nav leaves the
-     layout and becomes a drawer (ThemesNav); the text column is centred. */
+     layout and becomes a drawer (SectionNav): it takes no room, so the text column is
+     centred and uses the full width. */
   @media (max-width: 959.98px) {
     .page-guide {
-      @apply justify-center;
+      @apply justify-center gap-0;
     }
 
     .side-nav {
-      @apply static w-auto p-0;
+      @apply static w-0 shrink-0 p-0;
       margin-top: 0;
     }
   }
@@ -540,12 +604,18 @@
   }
 
   .side-drawer__panel {
-    @apply h-full overflow-y-auto overscroll-contain px-4 pt-[84px] pb-6;
+    @apply h-full overflow-y-auto overscroll-contain px-4 pt-[76px] pb-6;
   }
 
   /* The tab stays on the drawer's outer edge, so it is visible while closed. */
+  /* Closed: a hamburger on the window's left edge (48 × 48, below the nav). */
   .side-drawer__tab {
-    @apply absolute top-[96px] left-full flex items-center gap-1 rounded-r-full bg-bg py-3 pr-4 pl-3 text-nav font-semibold whitespace-nowrap text-text shadow-[4px_0_16px_rgb(23_37_91/0.08)] hover:bg-bg-alt;
+    @apply absolute top-[84px] left-full flex size-12 items-center justify-center rounded-r-full bg-bg text-text shadow-[4px_0_16px_rgb(23_37_91/0.08)] hover:bg-bg-alt;
+  }
+
+  /* Open: an × inside the drawer's top-right corner, fully on screen. */
+  .side-drawer--open .side-drawer__tab {
+    @apply top-3 right-3 left-auto rounded-full bg-transparent shadow-none;
   }
 
   .side-drawer__scrim {
@@ -657,8 +727,9 @@
     @apply mt-4 font-heading text-h3 font-semibold text-text;
   }
 
+  /* Links may break anywhere, so long ones (an email address) never widen the page. */
   .prose a {
-    @apply font-semibold underline decoration-1 underline-offset-2 hover:decoration-2;
+    @apply font-semibold underline decoration-1 underline-offset-2 [overflow-wrap:anywhere] hover:decoration-2;
   }
 
   .prose-list {
@@ -718,5 +789,29 @@
 
   .about-quote footer {
     @apply not-italic text-text-muted;
+  }
+
+  /* ===== Phones (below 700px): Themes & About ============================ */
+  @media (max-width: 699.98px) {
+    /* Text keeps nearly the full column (the 32px side padding is for wider screens). */
+    .factor__name,
+    .factor__summary,
+    .about-section__body {
+      @apply px-2;
+    }
+
+    .about-section__body {
+      @apply mt-8;
+    }
+
+    /* Section titles a step smaller, so long questions wrap less. */
+    .about-section__title {
+      @apply text-h3;
+    }
+
+    /* The Themes wheel uses the screen's full width (less the page margins). */
+    .themes-wheel-track {
+      --wheel-w: min(942px, calc(100vw - 3rem), calc((100svh - 3rem) * 942 / 934));
+    }
   }
 }

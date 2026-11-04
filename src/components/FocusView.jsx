@@ -4,8 +4,8 @@
 // Layout: a 6-column grid (24px gutters), at most 1200px wide.
 //   columns 1–3 — the scenes
 //   columns 4–6 — the wheel, with help (?) at its left and close (×) at its right
-// Both halves scale with the grid down to 960px. Narrower than that, the wheel
-// takes the full width and the scenes move into a side drawer.
+// Both halves scale with the grid down to 960px. Narrower than that (tablets and
+// phones), the selected indicator's scene sits above the wheel, both held still together.
 //
 // Scrolling works like a scrollytelling page: the view scrolls natively (no scroll
 // hijacking). Each indicator owns STEP_PX of scroll; while its scene's indicators are
@@ -22,7 +22,7 @@ import Scene from './Scene.jsx';
 import IndicatorWheel, { RING_RADIUS } from './IndicatorWheel.jsx';
 import { WHEEL_EXPAND_ALL } from '../config/themes.js';
 import useWidth from '../hooks/useWidth.js';
-import useNarrow from '../hooks/useNarrow.js'; // below DRAWER_BELOW (src/config/layout.js), the scenes go into a drawer
+import useNarrow from '../hooks/useNarrow.js';
 
 // Vertical layout, in px from the top of the window: the scene title and the
 // ? / × buttons share a centre line at HEADER_CENTRE_Y, and the wheel's ring
@@ -37,7 +37,6 @@ const GRID_MAX = 1200; // the two halves together
 const GRID_GUTTER = 24;
 const WHEEL_BOX = { width: 600, height: 700 }; // IndicatorWheel's own coordinate box (centre at 300, 300)
 const WHEEL_DRAWN_HEIGHT = 640; // ring top to the bottom of a third factor band, at scale 1
-const DRAWER_MAX = 480;
 // Beside the wheel, the scene is drawn at 80% of its column (left-aligned), so the
 // illustration is a touch narrower than the wheel's ring, as in Figma (node 1541:65628).
 const SCENE_FIT = 0.8;
@@ -60,18 +59,14 @@ const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)')
 export default function FocusView({ indicatorsByNumber, selected, hovered, onHover, onSelect, onPrev, onNext, onClose }) {
   const dialogRef = useRef(null);
   const scroller = useRef(null);
-  const drawerPane = useRef(null);
   const blockRefs = useRef(new Map()); // scene id → its block in the scroll track
-  const drawerSceneRefs = useRef(new Map());
   const [closing, setClosing] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false); // tapped open (touch); hover and focus open it via CSS
-  const narrow = useNarrow();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const narrow = useNarrow(); // below DRAWER_BELOW (src/config/layout.js): the scene sits above the wheel
 
   // Scale the scenes and the wheel to the room they actually have.
   const [measureScroller, , paneHeight] = useWidth();
   const [measureScenes, sceneColumnWidth] = useWidth();
-  const [measureDrawer, drawerWidth] = useWidth();
   const [measureWheel, wheelColumnWidth] = useWidth();
   const scrollerRef = useCallback(
     (el) => {
@@ -80,25 +75,25 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
     },
     [measureScroller],
   );
-  const drawerRef = useCallback(
-    (el) => {
-      drawerPane.current = el;
-      measureDrawer(el);
-    },
-    [measureDrawer],
-  );
   const sceneScale = sceneColumnWidth ? Math.min(1, (sceneColumnWidth * SCENE_FIT) / SCENE_BOX.width) : 0.75;
-  const drawerSceneScale = drawerWidth ? Math.min(1, (drawerWidth - 48) / SCENE_BOX.width) : 0.6;
   const sceneHeight = 27 + 24 + SCENE_BOX.height * sceneScale; // title, gap, illustration
+  // Below 960px: the selected indicator's scene sits above the wheel, held still with it.
+  // It takes up to 46% of the height (title, gap, illustration); the wheel gets the rest.
+  const stackSceneScale =
+    narrow && wheelColumnWidth
+      ? Math.min(wheelColumnWidth / SCENE_BOX.width, Math.max(0.25, (paneHeight * 0.46 - 72) / SCENE_BOX.height))
+      : 0;
+  const stackSceneHeight = narrow ? 48 + 24 + SCENE_BOX.height * stackSceneScale : 0;
+  // The ? / × row's centre line, from the top of the wheel column: the ring starts on it.
+  const headerLine = narrow ? stackSceneHeight + 8 + HEADER_HEIGHT / 2 : HEADER_CENTRE_Y - NAV_HEIGHT;
   // The wheel fits its column's width, and the window's height (it no longer scrolls on its own).
-  const wheelRoom = paneHeight - (HEADER_CENTRE_Y - NAV_HEIGHT) - 16;
+  const wheelRoom = paneHeight - headerLine - 16;
   const wheelScale = Math.min(
     1,
     wheelColumnWidth ? wheelColumnWidth / WHEEL_BOX.width : 1,
     paneHeight ? wheelRoom / WHEEL_DRAWN_HEIGHT : 1,
   );
-  const ringCentreY = HEADER_CENTRE_Y + RING_RADIUS * wheelScale;
-  const wheelTop = ringCentreY - NAV_HEIGHT - (WHEEL_BOX.height / 2 - 50) * wheelScale; // box centre is 300 of 700
+  const wheelTop = headerLine + RING_RADIUS * wheelScale - (WHEEL_BOX.height / 2 - 50) * wheelScale; // box centre is 300 of 700
   const hintMaxWidth = Math.max(160, wheelColumnWidth - HEADER_HEIGHT * 2 - 16);
   const stickyTop = narrow ? 0 : STICKY_TOP;
 
@@ -194,13 +189,8 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
     scroller.current.scrollTo({ top: step.at, behavior: instant ? 'instant' : 'smooth' });
   }, [selected, narrow, stepPositions]);
 
-  // In the drawer, keep the selected indicator's scene in view.
+  // The selected indicator's scene (shown above the wheel below 960px).
   const activeScene = scenes.find((s) => s.slots.some((slot) => slot.indicator === selected));
-  useLayoutEffect(() => {
-    const el = drawerSceneRefs.current.get(activeScene?.id);
-    if (!narrow || !el || !drawerPane.current) return;
-    drawerPane.current.scrollTo({ top: el.offsetTop - 24, behavior: 'instant' });
-  }, [activeScene, narrow]);
 
   const requestClose = () => {
     if (closing) return;
@@ -209,12 +199,10 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
     setTimeout(onClose, 450);
   };
 
-  // Esc closes the drawer first (when open), then the focus view.
+  // Esc closes the focus view.
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key !== 'Escape') return;
-      if (narrow && drawerOpen) setDrawerOpen(false);
-      else requestClose();
+      if (e.key === 'Escape') requestClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -239,36 +227,6 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
       aria-label={indicatorsByNumber.get(selected).text}
       tabIndex={-1}
     >
-      {/* ----- Below 960px: the scenes live in a side drawer (it scrolls on its own) ----- */}
-      {narrow && (
-        <>
-          <div className={`focus-drawer ${drawerOpen ? 'focus-drawer--open' : ''}`} style={{ width: `min(${DRAWER_MAX}px, 85vw)` }}>
-            <div ref={drawerRef} id="focus-scenes-drawer" className="h-full overflow-x-hidden overflow-y-auto overscroll-contain">
-              <div className="flex flex-col px-6 pt-6 pb-[60vh]" style={{ gap: 72 * drawerSceneScale }}>
-                {scenes.map((scene) => (
-                  <div key={scene.id} ref={(el) => drawerSceneRefs.current.set(scene.id, el)}>
-                    <Scene scene={scene} scale={drawerSceneScale} {...sceneProps} />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="focus-drawer__tab"
-              aria-expanded={drawerOpen}
-              aria-controls="focus-scenes-drawer"
-              onClick={() => setDrawerOpen((open) => !open)}
-            >
-              <span>{drawerOpen ? 'Hide scenes' : 'Scenes'}</span>
-              <svg viewBox="0 0 24 24" className={`size-4 transition-transform ${drawerOpen ? 'rotate-180' : ''}`} aria-hidden="true">
-                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
-          {drawerOpen && <div className="focus-drawer__scrim" onClick={() => setDrawerOpen(false)} aria-hidden="true" />}
-        </>
-      )}
-
       {/* ----- The view's one scroll ----- */}
       {/* No scroll anchoring: with sticky content it would nudge the scroll position on every
           re-render, which here selects the next indicator, and so on. */}
@@ -287,7 +245,7 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
           }}
         >
           {/* Columns 1–3: one block per scene. The scene holds still (sticky) while its
-              indicators are stepped through, then scrolls away. In the drawer layout the
+              indicators are stepped through, then scrolls away. Below 960px the
               blocks are empty and only make the scroll track. */}
           <div
             ref={narrow ? undefined : measureScenes}
@@ -323,18 +281,25 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
             ))}
           </div>
 
-          {/* Columns 4–6 (or all six in the drawer layout): help, close and the wheel, held still */}
+          {/* Columns 4–6 (or all six below 960px): the scene (below 960px), help, close and the wheel, held still */}
           <div
             ref={measureWheel}
             className={`sticky top-0 row-start-1 self-start ${narrow ? 'col-span-6 col-start-1 mx-auto w-full max-w-[600px]' : 'col-span-3 col-start-4'}`}
             style={{ height: paneHeight || '100%' }}
           >
+            {/* Below 960px: the selected indicator's scene, above the wheel */}
+            {narrow && activeScene && (
+              <div className="focus-stack__scene" style={{ height: stackSceneHeight }}>
+                <Scene scene={activeScene} scale={stackSceneScale} {...sceneProps} />
+              </div>
+            )}
+
             {/* ? at the wheel's left, × at its right.
               The help button expands rightwards into a pill with the hint. */}
             <div
               className="absolute inset-x-0 z-10 flex items-start justify-between gap-4"
               style={{
-                top: HEADER_CENTRE_Y - NAV_HEIGHT - HEADER_HEIGHT / 2,
+                top: headerLine - HEADER_HEIGHT / 2,
                 minHeight: HEADER_HEIGHT,
               }}
             >
