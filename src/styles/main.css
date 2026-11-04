@@ -389,6 +389,22 @@
     @apply inline-flex items-center gap-1 font-bold whitespace-nowrap underline decoration-1 underline-offset-2 hover:decoration-2;
   }
 
+  /* The small < > in "Rotate wheel using < >": the wheel's arrow buttons, drawn inline. */
+  .focus-help__chevrons {
+    @apply inline-flex items-center align-middle whitespace-nowrap;
+  }
+  .focus-help__chevrons {
+    @apply text-text-muted;
+  }
+  .focus-help__chevrons svg {
+    width: 1.1em;
+    height: 1.1em;
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: 3;
+    stroke-linejoin: round;
+  }
+
   /* Below 960px: the selected indicator's scene, held still above the wheel (FocusView). */
   .focus-stack__scene {
     @apply absolute inset-x-0 top-0 flex justify-center overflow-hidden;
