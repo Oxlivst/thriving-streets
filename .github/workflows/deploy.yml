@@ -37,7 +37,9 @@ jobs:
       - name: Build (CSV → JSON, then Vite)
         run: npm run build
         env:
-          BASE_PATH: /${{ github.event.repository.name }}/
+          # The site is served from the root of its own subdomain
+          # (thrivingstreets.oxfordshireliveablestreets.org, set in Settings → Pages).
+          BASE_PATH: /
 
       - uses: actions/upload-pages-artifact@v5
         with:
