@@ -337,7 +337,21 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
                   <span className="focus-help__inner">
                     {WHEEL_EXPAND_ALL
                       ? 'Use the arrows to move between experiences. '
-                      : 'Rotate wheel to explore the factors behind the experience. '}
+                      : (
+                        <>
+                          Rotate wheel using{' '}
+                          <span className="focus-help__chevrons" aria-hidden="true">
+                            {/* Same triangles as the wheel's arrow buttons (IndicatorWheel: TriangleIcon). */}
+                            <svg viewBox="0 0 24 24">
+                              <path d="M9 5.5L18 12L9 18.5Z" transform="translate(24 0) scale(-1 1)" />
+                            </svg>
+                            <svg viewBox="0 0 24 24">
+                              <path d="M9 5.5L18 12L9 18.5Z" />
+                            </svg>
+                          </span>{' '}
+                          arrows to explore the themes.{' '}
+                        </>
+                      )}
                     <a href="./themes.html" target="_blank" rel="noopener" className="focus-help__link">
                       Learn more
                       <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
