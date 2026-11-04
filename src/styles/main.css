@@ -177,7 +177,7 @@
 
   /* Fades on an inner span, since the <p> carries the load entrance animation (data-rise). */
   .hero-prompt__text {
-    transition: opacity var(--duration-slow-fade) cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity var(--duration-fade) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .hero-prompt[data-hidden='true'] .hero-prompt__text {
