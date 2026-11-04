@@ -136,14 +136,15 @@
     @apply mx-auto w-column max-w-full pt-[102px];
   }
 
-  /* The callouts, dotted line, scroll cue and prompt, placed as in Figma (640 × 430). */
+  /* The callouts, dotted line, scroll cue and prompt, placed as in Figma (640 × 430), with the
+     dotted line scaled to 85% (from its top) and the cue and prompt moved up with its end. */
   .hero-callouts {
-    @apply relative mt-8 h-[430px];
+    @apply relative mt-8 h-[370px];
   }
 
   /* Placed from the centre (282px in the 640px column), so the line ends at the cue on any width. */
   .hero-line {
-    @apply absolute top-[-25px] left-[calc(50%-38px)] h-[334px] w-[84.6px];
+    @apply absolute top-[-25px] left-[calc(50%-33.8px)] h-[284px] w-[71.9px];
   }
 
   .hero-callout-layer {
@@ -167,11 +168,11 @@
   }
 
   .hero-cue {
-    @apply absolute top-[315px] left-[calc(50%+0.5px)] h-[22px] w-[39px] -translate-x-1/2;
+    @apply absolute top-[265px] left-[calc(50%+0.5px)] h-[22px] w-[39px] -translate-x-1/2;
   }
 
   .hero-prompt {
-    @apply absolute top-[356px] left-1/2 w-[480px] -translate-x-1/2 text-center text-body text-hero-prompt;
+    @apply absolute top-[297px] left-1/2 w-[480px] -translate-x-1/2 text-center text-body text-text;
   }
 
   /* Phones (below 700px): the hero fills the screen width. The title and subtitle shrink,
@@ -192,7 +193,7 @@
     /* Same height as the design's block, so the dotted line, cue and prompt keep their
        desktop places (from the centre) and the callouts stack above them. */
     .hero-callouts {
-      @apply mt-10 flex h-auto min-h-[430px] flex-col items-center gap-10 pt-4;
+      @apply mt-10 flex h-auto min-h-[370px] flex-col items-center gap-10 pt-4;
     }
 
     .hero-callout-layer,
