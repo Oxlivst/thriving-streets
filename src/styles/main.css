@@ -7,18 +7,18 @@
 @import './tokens.css';
 
 /* ===== Fonts ============================================================= */
-/* Rubik Doodle Shadow draws only the Vision page's title shadow, so it is cut down to
-   the letters of "Streets for Thriving Lives" (24 KB instead of 210 KB). If the title
-   changes, regenerate it from @fontsource/rubik-doodle-shadow with fonttools:
-   pyftsubset rubik-doodle-shadow-latin-400-normal.woff2 --text="<title>" --flavor=woff2
-     --layout-features='kern,liga' --output-file=src/assets/fonts/rubik-doodle-shadow-title.woff2
+/* Knewave (SIL Open Font License) sets only the Vision page's title, so it is cut down
+   to the letters of "Streets for Thriving Lives" (3.5 KB instead of 17 KB). If the title
+   changes, regenerate it from @fontsource/knewave with fonttools:
+   pyftsubset knewave-latin-400-normal.woff2 --text="<title, upper and lower case>"
+     --flavor=woff2 --layout-features='kern,liga' --output-file=src/assets/fonts/knewave-title.woff2
    (missing letters fall back to Rubik). */
 @font-face {
-  font-family: 'Rubik Doodle Shadow';
+  font-family: 'Knewave';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('../assets/fonts/rubik-doodle-shadow-title.woff2') format('woff2');
+  src: url('../assets/fonts/knewave-title.woff2') format('woff2');
 }
 
 /* ===== Base ============================================================== */
@@ -107,39 +107,18 @@
   }
 
   /* ===== Hero ============================================================ */
+  /* Knewave, upper case, in its own blue. The box is sized in em (636 × 207 at 84px),
+     so it follows the fluid title size; Figma has the text 4px right of centre. */
   .hero-title {
-    /* Two stacked layers: the doodle shadow sits behind the solid title.
-       The box is sized in em (636 × 207 at 84px), so it follows the fluid title size. */
-    @apply relative mx-auto h-[2.464em] w-[7.571em] text-center text-h1-home;
-  }
-
-  .hero-title__shadow {
-    @apply pointer-events-none absolute inset-x-0 top-[0.083em] -left-[0.071em] font-display tracking-normal whitespace-nowrap text-bg-tertiary select-none;
-  }
-
-  /* Once hero.js has placed each shadow letter, the layer spans the whole title. */
-  .hero-title__shadow[data-aligned='true'] {
-    @apply inset-0;
-  }
-
-  .hero-title__shadow-letter {
-    @apply absolute leading-normal whitespace-pre;
-  }
-
-  .hero-title__main {
-    @apply relative font-heading font-extrabold whitespace-nowrap text-red-1;
+    @apply relative mx-auto h-[2.464em] w-[7.571em] translate-x-[0.024em] text-center font-title text-h1-home whitespace-nowrap text-hero-title uppercase;
   }
 
   .hero-subtitle {
-    @apply font-heading text-h3 font-semibold text-red-2;
+    @apply font-heading text-h3 font-semibold text-text;
   }
 
   .callout {
-    @apply absolute flex h-[62px] items-center justify-center rounded-[11px] bg-green-3 px-6 py-4 text-body font-bold whitespace-nowrap text-white;
-  }
-
-  .callout-outline {
-    @apply absolute h-[62px] rounded-[11px] border-2 border-outline-pink;
+    @apply absolute flex h-[62px] items-center justify-center rounded-[11px] bg-bg-alt px-6 py-4 text-body font-bold whitespace-nowrap text-text;
   }
 
   .hero-prompt {
