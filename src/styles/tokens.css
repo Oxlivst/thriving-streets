@@ -21,10 +21,11 @@
   --color-highlight-soft: #ffebb5; /* Yellow-highlight-light */
 
   --color-text: #17255b; /* Text-primary */
+  --color-hero-title: #263982; /* the Vision page's title */
   --color-text-muted: #565b71; /* Text-secondary: nav links, hover labels */
   --color-hero-prompt: #553b25; /* Brown 5: hero scroll prompt, as in Figma */
   --color-label-muted: #898583; /* wheel labels on unmapped themes */
-  --color-outline-pink: #f2949a; /* hero callout outlines */
+  --color-outline-pink: #f2949a; /* style guide (the hero's dotted line uses it) */
 
   --color-bg: #f9efe9; /* Background-primary */
   --color-bg-alt: #fce9cc; /* Background-secondary: hover labels */
@@ -51,7 +52,7 @@
   --color-theme-community-agency-text: #915122;
 
   /* ---- Fonts ----------------------------------------------------------- */
-  --font-display: 'Rubik Doodle Shadow', 'Rubik', system-ui, sans-serif;
+  --font-title: 'Knewave', 'Rubik', system-ui, sans-serif; /* the Vision page's title */
   --font-heading: 'Rubik', system-ui, sans-serif;
   --font-body: 'Manrope', system-ui, sans-serif;
 
@@ -93,16 +94,4 @@
   /* ---- Layout ----------------------------------------------------------- */
   --container-content: 1200px;
   --container-column: 640px; /* hero and scene column */
-}
-
-/* ---- Hero tuning ------------------------------------------------------
-   Inside the hero only, the palette is nudged to sit with the illustrations
-   (which lean slightly warmer, with a richer yellow and a livelier teal).
-   Hues move by 3° at most; saturation and lightness by a few points.
-   Delete this block to return the hero to the style-guide values. */
-#hero {
-  --color-red-1: #f48689; /* title            (style guide #F68991) */
-  --color-red-2: #d56b6d; /* subtitle         (style guide #D47178) */
-  --color-outline-pink: #f09192; /* callout outlines (was #F2949A) */
-  --color-green-3: #447f87; /* callout fill     (style guide #487E83) */
 }
