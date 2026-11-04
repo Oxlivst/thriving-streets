@@ -72,12 +72,13 @@ export default function VisionExplorer() {
   return (
     <>
       <div ref={column} className="mx-auto flex flex-col" style={{ width: COLUMN_WIDTH, gap: 72 * scale }}>
-        {scenes.map((scene) => (
+        {scenes.map((scene, i) => (
           <div key={scene.id} id={scene.id} ref={(el) => sceneRefs.current.set(scene.id, el)}>
             <Scene
               scene={scene}
               scale={scale}
               parallax
+              eager={i === 0}
               indicatorsByNumber={indicatorsByNumber}
               selected={null}
               hovered={selected === null ? hovered : null}

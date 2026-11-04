@@ -1,0 +1,13 @@
+<!-- Themes wheel collage, composed from the files in this folder (Figma: file
+     BWfZznPABe6QYhxxBGhOdp, node 6917:5930; positions in px from that frame).
+     Open it in a browser or Figma to see the whole; to change a part, replace its file.
+     The site builds the same composition in HTML (themes.html), not from this file. -->
+<svg width="971" height="937" viewBox="0 0 971 937" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <image href="themes-wheel-ring.svg" xlink:href="themes-wheel-ring.svg" x="229.607" y="204.094" width="484" height="484.44" />
+  <image href="collage-nature@2x.webp" xlink:href="collage-nature@2x.webp" x="297.742" y="0" width="348.477" height="228.772" />
+  <image href="collage-movement@2x.webp" xlink:href="collage-movement@2x.webp" x="666.420" y="122.134" width="273.956" height="318.131" />
+  <image href="collage-economy@2x.webp" xlink:href="collage-economy@2x.webp" x="644.163" y="432.874" width="326.349" height="350.236" />
+  <image href="collage-community@2x.webp" xlink:href="collage-community@2x.webp" x="286.522" y="626.681" width="369.490" height="309.576" />
+  <image href="collage-governance@2x.webp" xlink:href="collage-governance@2x.webp" x="1.691" y="503.247" width="300.674" height="280.286" />
+  <image href="collage-health@2x.webp" xlink:href="collage-health@2x.webp" x="0.292" y="107.425" width="310.831" height="362.349" />
+</svg>

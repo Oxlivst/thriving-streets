@@ -41,3 +41,13 @@ Give interactive layers a prefix in Figma, so they can be wired up by ID:
 - `anim-<name>`: animated part, e.g. `anim-tree-sway`
 
 Describe what each one does in §8 of the build spec, using its interaction ID (e.g. `INT-03`).
+
+## Themes wheel collage
+
+`themes-wheel/` holds the wheel collage at the top of the Themes & Factors page (Figma: file `BWfZznPABe6QYhxxBGhOdp`, node `6917:5930`):
+
+- `themes-wheel-ring.svg`: the theme ring (outlined text).
+- `collage-<theme>.webp` and `collage-<theme>@2x.webp`: one photo collage per theme, with a transparent background. The themes are `nature`, `movement`, `economy`, `community`, `governance` and `health`.
+- `themes-wheel.svg`: the whole collage, composed from the files above, for opening in a browser or Figma. The page builds the same composition in HTML (`themes.html`), with each part placed at its Figma position.
+
+To swap a collage, replace both of its WebP files and keep their names. Export the 2x file at twice the Figma size, with a transparent background.

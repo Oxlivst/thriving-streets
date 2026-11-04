@@ -22,6 +22,7 @@ import Scene from './Scene.jsx';
 import IndicatorWheel, { RING_RADIUS } from './IndicatorWheel.jsx';
 import { WHEEL_EXPAND_ALL } from '../config/themes.js';
 import useWidth from '../hooks/useWidth.js';
+import useNarrow from '../hooks/useNarrow.js'; // below DRAWER_BELOW (src/config/layout.js), the scenes go into a drawer
 
 // Vertical layout, in px from the top of the window: the scene title and the
 // ? / × buttons share a centre line at HEADER_CENTRE_Y, and the wheel's ring
@@ -34,7 +35,6 @@ const STICKY_TOP = FOCUS_TITLE_TOP - NAV_HEIGHT; // where a scene holds still, i
 
 const GRID_MAX = 1200; // the two halves together
 const GRID_GUTTER = 24;
-const DRAWER_BELOW = 960; // narrower than this, the scenes go into a drawer
 const WHEEL_BOX = { width: 600, height: 700 }; // IndicatorWheel's own coordinate box (centre at 300, 300)
 const WHEEL_DRAWN_HEIGHT = 640; // ring top to the bottom of a third factor band, at scale 1
 const DRAWER_MAX = 480;
@@ -56,18 +56,6 @@ const SCENE_STEPS = scenes.map((scene) => ({
 }));
 
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-function useNarrow() {
-  const query = `(max-width: ${DRAWER_BELOW - 0.02}px)`;
-  const [narrow, setNarrow] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const onChange = () => setNarrow(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, [query]);
-  return narrow;
-}
 
 export default function FocusView({ indicatorsByNumber, selected, hovered, onHover, onSelect, onPrev, onNext, onClose }) {
   const dialogRef = useRef(null);

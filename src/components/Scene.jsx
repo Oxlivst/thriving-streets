@@ -73,28 +73,25 @@ function inPolygon(x, y, points) {
   return inside;
 }
 
-// Draws each illustration to an offscreen canvas once, for pixel hit tests.
-function useHitMaps(slots, indicatorsByNumber) {
+// Draws each illustration to an offscreen canvas once, for pixel hit tests. The map is
+// made from the colour <img> when it has loaded (so a lazily loaded scene costs nothing
+// until it is near the screen); until then the slot's rectangle is used.
+function useHitMaps() {
   const maps = useRef(new Map());
-  useEffect(() => {
-    for (const slot of slots) {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(slot.width);
-        canvas.height = Math.round(slot.height);
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        try {
-          maps.current.set(slot.indicator, ctx.getImageData(0, 0, canvas.width, canvas.height));
-        } catch {
-          maps.current.set(slot.indicator, null); // rectangle-only hit testing
-        }
-      };
-      img.src = indicatorsByNumber.get(slot.indicator).illustration;
+  const fromImage = (slot, img) => {
+    if (maps.current.has(slot.indicator)) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(slot.width);
+    canvas.height = Math.round(slot.height);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    try {
+      maps.current.set(slot.indicator, ctx.getImageData(0, 0, canvas.width, canvas.height));
+    } catch {
+      maps.current.set(slot.indicator, null); // rectangle-only hit testing
     }
-  }, [slots, indicatorsByNumber]);
-  return maps;
+  };
+  return [maps, fromImage];
 }
 
 function useInView(ref, threshold) {
@@ -146,6 +143,7 @@ export default function Scene({
   scene,
   scale = 1,
   parallax = false,
+  eager = false, // load the illustrations straight away (the first scene); others load as they near the screen
   indicatorsByNumber,
   selected,
   hovered,
@@ -155,7 +153,7 @@ export default function Scene({
 }) {
   const boxRef = useRef(null);
   const hintId = `${useId()}-hint`;
-  const hitMaps = useHitMaps(scene.slots, indicatorsByNumber);
+  const [hitMaps, buildHitMap] = useHitMaps();
   const titleVisible = useInView(boxRef, TITLE_SHOW_AT);
   const parallaxOffsets = useParallax(boxRef, scene.slots, parallax);
   const offsetOf = (n) => parallaxOffsets.current.get(n) ?? 0;
@@ -301,8 +299,15 @@ export default function Scene({
                 }}
               >
                 {/* The faded artwork always sits underneath; the full-colour version fades in on top. */}
-                <img src={indicator.illustrationFaded} alt="" />
-                <img src={indicator.illustration} alt="" style={{ opacity: inColour ? 1 : 0 }} />
+                <img src={indicator.illustrationFaded} alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" />
+                <img
+                  src={indicator.illustration}
+                  alt=""
+                  loading={eager ? 'eager' : 'lazy'}
+                  decoding="async"
+                  style={{ opacity: inColour ? 1 : 0 }}
+                  onLoad={(e) => buildHitMap(slot, e.currentTarget)}
+                />
               </button>
             );
           })}
