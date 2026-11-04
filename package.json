@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "data": "node scripts/csv-to-json.mjs",
+    "data": "node scripts/illustrations-to-webp.mjs && node scripts/csv-to-json.mjs",
     "dev": "npm run data && vite",
     "build": "npm run data && vite build",
     "preview": "vite preview"
@@ -20,6 +20,7 @@
     "@tailwindcss/vite": "^4.3.4",
     "@vitejs/plugin-react": "^6.2.1",
     "csv-parse": "^7.0.3",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.3.4",
     "vite": "^8.3.5"
   }
