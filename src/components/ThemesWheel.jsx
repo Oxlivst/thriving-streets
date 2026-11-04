@@ -62,13 +62,12 @@ const pct = (value, of) => `${(value / of) * 100}%`;
 const themesByKey = new Map(data.themes.map((t) => [t.key, t]));
 
 // Full ring between two radii (the hole cut out with the even-odd rule).
-const annulus = (inner, outer) =>
-  [outer, inner].map((r) => `M ${r} 0 A ${r} ${r} 0 1 1 ${-r} 0 A ${r} ${r} 0 1 1 ${r} 0 Z`).join(' ');
+const annulus = (inner, outer) => [outer, inner].map((r) => `M ${r} 0 A ${r} ${r} 0 1 1 ${-r} 0 A ${r} ${r} 0 1 1 ${r} 0 Z`).join(' ');
 
 function LensRing() {
   const mid = (LENS.inner + LENS.outer) / 2;
   return (
-    <g className="themes-wheel__band" data-i={-1} data-dx="0" data-dy="0">
+    <g className="themes-wheel__band" data-i={-1} data-dx="0" data-dy="0" style={{ '--i': -1, '--dx': 0, '--dy': 0 }}>
       <defs>
         <linearGradient id="themes-lens-shade" gradientUnits="userSpaceOnUse" x1={-LENS.outer} y1="0" x2={LENS.outer} y2="0">
           <stop offset="0" style={{ stopColor: `color-mix(in srgb, ${themeBg('social-connection')} 14%, white)` }} />
@@ -111,7 +110,14 @@ function FactorBands() {
                 const id = `themes-band-${theme.key}-${i}`;
                 const name = FACTOR_LABELS[factor.key] ?? factor.name;
                 return (
-                  <g key={factor.key} className="themes-wheel__band" data-i={i} data-dx={dx.toFixed(3)} data-dy={dy.toFixed(3)}>
+                  <g
+                    key={factor.key}
+                    className="themes-wheel__band"
+                    data-i={i}
+                    data-dx={dx.toFixed(3)}
+                    data-dy={dy.toFixed(3)}
+                    style={{ '--i': i, '--dx': dx.toFixed(3), '--dy': dy.toFixed(3) }}
+                  >
                     <path
                       d={sectorPath(inner, outer, centre, BAND.corner)}
                       fill={themeBg(theme.key)}
@@ -150,10 +156,15 @@ export default function ThemesWheel() {
   // p: 0 when the wheel first holds still, 1 once SWAP_PX more has been scrolled.
   // It eases towards the scroll position each frame (instead of jumping with each
   // scroll step), so the change glides; with reduced motion it follows exactly.
+  // Touch screens and phones instead play the swap once, as a short timed crossfade
+  // (CSS, data-swapped), when scrolling starts past the held wheel: driving every part
+  // of the drawing from the scroll is too much work for a phone.
   useEffect(() => {
     const track = trackRef.current;
     const wheel = wheelRef.current;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timed = window.matchMedia('(pointer: coarse), (max-width: 699.98px)').matches;
+    wheel.dataset.mode = timed ? 'timed' : 'scroll';
     const parts = [
       ...[...wheel.querySelectorAll('.themes-wheel__collage')].map((el) => ({ el, kind: 'collage' })),
       ...[...wheel.querySelectorAll('.themes-wheel__band')].map((el) => ({ el, kind: 'band', i: Number(el.dataset.i) })),
@@ -183,6 +194,13 @@ export default function ThemesWheel() {
     const update = () => {
       frame = 0;
       const goal = target();
+      if (timed) {
+        // Swap once past a little of the hold; swap back near its start (no flicker in between).
+        const swapped = wheel.dataset.swapped === 'true';
+        if (!swapped && goal > 0.15) wheel.dataset.swapped = 'true';
+        if (swapped && goal < 0.05) wheel.dataset.swapped = 'false';
+        return;
+      }
       shown = shown === null || reduce ? goal : shown + (goal - shown) * SMOOTHING;
       if (Math.abs(goal - shown) < 0.001) shown = goal;
       wheel.dataset.progress = shown.toFixed(3);
@@ -231,7 +249,13 @@ export default function ThemesWheel() {
               alt=""
               data-dx={(dx / length).toFixed(3)}
               data-dy={(dy / length).toFixed(3)}
-              style={{ left: pct(c.x, BOX.width), top: pct(c.y, BOX.height), width: pct(c.width, BOX.width) }}
+              style={{
+                left: pct(c.x, BOX.width),
+                top: pct(c.y, BOX.height),
+                width: pct(c.width, BOX.width),
+                '--dx': (dx / length).toFixed(3),
+                '--dy': (dy / length).toFixed(3),
+              }}
             />
           );
         })}

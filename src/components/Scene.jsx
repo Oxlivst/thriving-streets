@@ -9,7 +9,7 @@
 // waits briefly so passing over an overlap doesn't flicker.
 // Each slot is still a real <button> for keyboard and screen-reader users.
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { memo, useEffect, useId, useRef, useState } from 'react';
 import { SCENE_BOX } from '../config/scenes.js';
 
 const ALPHA_THRESHOLD = 24;
@@ -144,7 +144,7 @@ function useParallax(boxRef, slots, enabled) {
   return offsets;
 }
 
-export default function Scene({
+function Scene({
   scene,
   scale = 1,
   parallax = false,
@@ -335,3 +335,6 @@ export default function Scene({
     </div>
   );
 }
+
+// Re-renders only when its own props change (not on every update of the page or focus view).
+export default memo(Scene);

@@ -23,8 +23,12 @@
 
 /* ===== Base ============================================================== */
 @layer base {
-  html {
-    scroll-behavior: smooth;
+  /* Smooth scrolling for in-page links with a mouse or trackpad; touch screens jump
+     (smooth scrolling under a hiding/showing header stutters on phones). */
+  @media (pointer: fine) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
 
   body {
@@ -223,6 +227,9 @@
      `scale` and `transform` carry the hover lift, which eases in and out. */
   .scene-slot {
     @apply absolute block cursor-pointer border-0 bg-transparent p-0;
+    /* Each illustration is a detailed vector drawing: its own layer, so the scroll
+       parallax (translate) and the hover lift just move it, without redrawing it. */
+    will-change: translate, transform;
     transform-origin: 50% 60%;
     transition:
       scale var(--duration-move) var(--ease-smooth),
@@ -304,6 +311,14 @@
     scroll-snap-stop: always;
   }
 
+  /* Touch: still snaps to an indicator, but a swipe may carry past several (forcing a
+     stop at each one fights touch momentum and feels sticky on phones). */
+  @media (pointer: coarse) {
+    .focus-snap {
+      scroll-snap-stop: normal;
+    }
+  }
+
   /* Beside the wheel the scene is narrower than its column; its title may use the
      column's spare width to stay on one line (centred over the art when it fits). */
   .focus-scenes--beside .scene-title {
@@ -369,7 +384,8 @@
 
   /* Below 960px: the selected indicator's scene, held still above the wheel (FocusView). */
   .focus-stack__scene {
-    @apply absolute inset-x-0 top-0 flex justify-center overflow-hidden pt-2;
+    @apply absolute inset-x-0 top-0 flex justify-center overflow-hidden;
+    padding-top: var(--stack-gap); /* space below the nav (FocusView: STACK_GAP) */
   }
 
   /* The scene is narrower than the column above the wheel; its title may use the
@@ -425,6 +441,20 @@
 
   .wheel-out[data-dir='up'] {
     animation-name: wheel-out-downwards;
+  }
+
+  /* Touch screens: a plain, quicker crossfade when the indicator changes (lighter for
+     phones than moving and scaling two whole wheels). */
+  @media (pointer: coarse) {
+    .wheel-in,
+    .wheel-in[data-dir='up'] {
+      animation: fade-in 350ms var(--ease-smooth) both;
+    }
+
+    .wheel-out,
+    .wheel-out[data-dir='up'] {
+      animation: fade-out 300ms var(--ease-smooth) both;
+    }
   }
 
   @keyframes wheel-in-from-below {
@@ -549,6 +579,32 @@
 
   .themes-wheel__band {
     opacity: 0;
+  }
+
+  /* Touch screens and phones (data-mode="timed"): the swap plays once as a crossfade
+     (ThemesWheel sets data-swapped), the Equity & Safety ring first, then the bands. */
+  .themes-wheel[data-mode='timed'] .themes-wheel__collage {
+    transition:
+      opacity 500ms var(--ease-smooth),
+      transform 700ms var(--ease-smooth);
+  }
+
+  .themes-wheel[data-mode='timed'][data-swapped='true'] .themes-wheel__collage {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * 48px), calc(var(--dy) * 48px)) scale(0.94);
+  }
+
+  .themes-wheel[data-mode='timed'] .themes-wheel__band {
+    transform: translate(calc(var(--dx) * -18px), calc(var(--dy) * -18px));
+    transition:
+      opacity 450ms var(--ease-smooth),
+      transform 600ms var(--ease-smooth);
+  }
+
+  .themes-wheel[data-mode='timed'][data-swapped='true'] .themes-wheel__band {
+    opacity: 1;
+    transform: none;
+    transition-delay: calc(250ms + (var(--i) + 1) * 90ms);
   }
 
   /* Side nav (sticky) beside the 640px text column. 288px (Figma: 257px), so the
