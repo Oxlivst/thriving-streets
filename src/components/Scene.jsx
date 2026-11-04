@@ -11,6 +11,7 @@
 
 import { memo, useEffect, useId, useRef, useState } from 'react';
 import { SCENE_BOX } from '../config/scenes.js';
+import { scrollEffectsOff } from '../scripts/motion.js';
 
 const ALPHA_THRESHOLD = 24;
 const SWITCH_DELAY_MS = 120; // moving from one illustration to another
@@ -118,7 +119,7 @@ function useParallax(boxRef, slots, enabled) {
   const offsets = useRef(new Map());
   useEffect(() => {
     const box = boxRef.current;
-    if (!enabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!enabled || scrollEffectsOff()) return;
     let frame = 0;
     const update = () => {
       frame = 0;

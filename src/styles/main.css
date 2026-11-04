@@ -227,13 +227,20 @@
      `scale` and `transform` carry the hover lift, which eases in and out. */
   .scene-slot {
     @apply absolute block cursor-pointer border-0 bg-transparent p-0;
-    /* Each illustration is a detailed vector drawing: its own layer, so the scroll
-       parallax (translate) and the hover lift just move it, without redrawing it. */
-    will-change: translate, transform;
     transform-origin: 50% 60%;
     transition:
       scale var(--duration-move) var(--ease-smooth),
       transform var(--duration-move) var(--ease-smooth);
+  }
+
+  /* Where the parallax runs (larger screens with a mouse; src/scripts/motion.js), each
+     illustration, a detailed vector drawing, gets its own layer, so the drift and the
+     hover lift just move it without redrawing it. Phones skip it (no parallax there,
+     and every layer costs memory). */
+  @media (pointer: fine) and (min-width: 960px) and (prefers-reduced-motion: no-preference) {
+    .scene-slot {
+      will-change: translate, transform;
+    }
   }
 
   /* Hovered illustration floats up a touch. */
