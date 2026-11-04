@@ -1,10 +1,11 @@
 // Hero behaviour (spec INT-01): elements marked [data-parallax="<factor>"] drift
-// slightly with scroll. (The load entrance, [data-rise], is shared: src/scripts/rise.js.)
+// slightly with scroll, on larger screens with a mouse or trackpad (src/scripts/motion.js).
+// (The load entrance, [data-rise], is shared: src/scripts/rise.js.)
 
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+import { scrollEffectsOff } from './motion.js';
 
 export function initHero() {
-  if (reduceMotion) return;
+  if (scrollEffectsOff()) return;
 
   const layers = [...document.querySelectorAll('[data-parallax]')];
   let ticking = false;
