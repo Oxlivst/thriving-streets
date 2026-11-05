@@ -175,11 +175,12 @@ export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, has
 
   return (
     <div
-      className="relative h-[700px] w-[600px]"
+      className="relative h-[700px] w-[600px] rounded-[48px]" // rounded: its focus outline
       role="group"
       aria-roledescription="indicator wheel"
       aria-label={indicator.text}
       onKeyDown={onKeyDown}
+      tabIndex={-1} // focusable from code (not a Tab stop): the scroll view moves focus here when the indicator changes
     >
       <div className="absolute inset-0" style={{ transform: `scale(${fit})`, transformOrigin: '300px 300px' }}>
       <svg viewBox="-300 -300 600 700" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
