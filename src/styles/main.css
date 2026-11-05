@@ -394,13 +394,30 @@
 
   /* Help: a 48px circle (the ? icon), collapsed by default; expands rightwards into the hint pill.
      Top-aligned (here and in its row), so the ? and the × stay put while the pill grows downwards. */
+  /* Closed: just the ? in its Background-tertiary circle. Open (hover, keyboard or tap): the
+     whole pill, ? included, in Background-primary. */
   .focus-help {
-    @apply flex min-h-12 min-w-0 items-start rounded-[24px] bg-bg-alt text-text;
+    @apply flex min-h-12 min-w-0 items-start rounded-[24px] text-text;
     transition: background-color 300ms var(--ease-smooth);
   }
 
   .focus-help__toggle {
     @apply flex size-12 shrink-0 items-center justify-center rounded-full bg-bg-tertiary;
+    transition: background-color 300ms var(--ease-smooth);
+  }
+
+  .focus-help:has(:focus-visible),
+  .focus-help[data-open='true'],
+  .focus-help:has(:focus-visible) .focus-help__toggle,
+  .focus-help[data-open='true'] .focus-help__toggle {
+    @apply bg-bg;
+  }
+
+  @media (hover: hover) {
+    .focus-help:not([data-input='touch']):not([data-input='pen']):hover,
+    .focus-help:not([data-input='touch']):not([data-input='pen']):hover .focus-help__toggle {
+      @apply bg-bg;
+    }
   }
 
   /* ----- The row above the wheel (scroll homepage, WheelHeader.jsx) -----
@@ -434,15 +451,16 @@
   }
 
   @media (hover: hover) {
-    .wheel-header__button:not(:disabled):hover,
-    .focus-help__toggle:hover {
+    .wheel-header__button:not(:disabled):hover {
       background-color: color-mix(in srgb, var(--color-bg-tertiary) 85%, var(--color-text) 8%);
     }
   }
 
+  /* Phones: only the ? (scrolling or tapping the scene moves between indicators). */
   @media (max-width: 699.98px) {
-    .wheel-header__bar {
-      @apply pl-4;
+    .wheel-header__bar,
+    .wheel-header > .wheel-header__button {
+      @apply hidden;
     }
   }
 

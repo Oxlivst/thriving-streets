@@ -2,6 +2,7 @@
 // then a bar with the indicator's number and a ↑ button, then a ↓ button. ↑ / ↓ move one
 // indicator at a time, as scrolling does. The help opens over the bar.
 // Colours: the bar is Background-secondary; the round buttons are Background-tertiary.
+// Phones show only the ? (main.css).
 
 import WheelHelp from './WheelHelp.jsx';
 
