@@ -27,8 +27,9 @@ const HEADER_CENTRE_Y = 125;
 const HEADER_HEIGHT = 48;
 const TITLE_TOP = HEADER_CENTRE_Y - 13.5; // scene title (27px line) centred on the row
 
-const ENTER_PX = 800; // scroll over which the scene moves aside and the wheel comes in
-const STEP_PX = 700; // scroll per indicator
+// Scroll lengths match the focus view on main (480px per indicator).
+const ENTER_PX = 480; // scroll over which the scene moves aside and the wheel comes in
+const STEP_PX = 480; // scroll per indicator
 // Each indicator (and the start of the move aside) is also a scroll-snap stop that a swipe
 // can't fly past (main.css, .story-snap), so one swipe moves one indicator on.
 const GRID_MAX = 1200; // the two halves together (as in the old focus view)
@@ -49,6 +50,15 @@ const FADE_MS = 600; // wheel crossfade
 // scroll timeline (main.css, .story-scene / .story-wheel), off the main thread, so it
 // stays smooth on phones. Elsewhere the scroll handler below writes it each frame.
 const SCROLL_TIMELINE = typeof CSS !== 'undefined' && CSS.supports('animation-timeline: --story');
+
+// While any story holds its stage, the page snaps firmly to its stops (as the focus view
+// on main does): html.story-snap-on in main.css. Elsewhere it scrolls freely.
+const holding = new Set();
+const setHolding = (id, on) => {
+  if (on) holding.add(id);
+  else holding.delete(id);
+  document.documentElement.classList.toggle('story-snap-on', holding.size > 0);
+};
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2); // ease in and out
@@ -136,7 +146,7 @@ const SceneStory = forwardRef(function SceneStory(
   const geometry = useRef(null);
   geometry.current = { layout, fromW, fromLeft, blockHeight, stageH, narrow };
   const blockTop = useRef(0); // the block's top, in page coordinates
-  const last = useRef({ t: -1, i: -1, active: undefined });
+  const last = useRef({ t: -1, i: -1, active: undefined, held: false });
   const onActiveRef = useRef(onActive);
   onActiveRef.current = onActive;
   const update = useCallback(() => {
@@ -171,7 +181,14 @@ const SceneStory = forwardRef(function SceneStory(
       last.current.active = active;
       onActiveRef.current(scene.id, active);
     }
+    // Firm snapping from where the stage starts to hold until it lets go (its last stop).
+    const held = y >= -1 && y < g.blockHeight - g.stageH - 1;
+    if (held !== last.current.held) {
+      last.current.held = held;
+      setHolding(scene.id, held);
+    }
   }, [indicators, scene.id]);
+  useEffect(() => () => setHolding(scene.id, false), [scene.id]);
   // Measure the block's place on the page now, and whenever the page's layout changes.
   // Also size the scene title: the whole scene shrinks as it moves aside, so the title
   // is counter-scaled to end at the size the focus view on main gives it (18px easing to
@@ -232,7 +249,8 @@ const SceneStory = forwardRef(function SceneStory(
       className="scene-story relative"
       style={{ height: stageH ? blockHeight : '100lvh', '--story-enter': `${ENTER_PX}px` }}
     >
-      {[0, ...indicators.map((_, i) => ENTER_PX + i * STEP_PX)].map((at) => (
+      {/* Stops: the start of the hold, each indicator, and where the stage lets go. */}
+      {[0, ...indicators.map((_, i) => ENTER_PX + i * STEP_PX), ENTER_PX + indicators.length * STEP_PX].map((at) => (
         <span key={at} className="story-snap" style={{ top: at }} aria-hidden="true" />
       ))}
       {/* The stage is as tall as the screen with the browser's toolbars hidden (lvh), as they

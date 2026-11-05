@@ -479,10 +479,24 @@
     scroll-snap-type: y proximity;
   }
 
+  /* While a scene holds its stage, always settle on a stop, as the focus view on main
+     does (SceneStory toggles the class). */
+  html.story-snap-on {
+    scroll-snap-type: y mandatory;
+  }
+
   .story-snap {
     @apply pointer-events-none absolute left-0 h-px w-px;
     scroll-snap-align: start;
     scroll-snap-stop: always;
+  }
+
+  /* Touch: still settles on a stop, but a swipe may carry past several, as on main
+     (forcing a stop at each one fights touch momentum and feels sticky). */
+  @media (pointer: coarse) {
+    .story-snap {
+      scroll-snap-stop: normal;
+    }
   }
 
   /* The move aside, run by the browser on the block's scroll timeline (off the main
