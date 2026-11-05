@@ -3,9 +3,10 @@
 // Owns the homepage's shared state, the selected (current) indicator and the hovered
 // one, so the scenes and the wheels always agree.
 //
-// The whole page is one long scroll: each scene is a SceneStory, where scrolling moves
-// the scene aside, brings its wheel in and steps through its indicators, then carries on
-// down the page. Scrolling back up runs it all in reverse.
+// The whole page is one long scroll: one SceneStory holds every scene. Scrolling moves the
+// first scene aside, brings the wheel in and steps through the indicators, handing over from
+// one scene to the next as it goes, then carries on down the page. Scrolling back up runs it
+// all in reverse.
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import data from '../data/indicators.json';
@@ -34,16 +35,15 @@ export default function VisionExplorer() {
 
   const [selected, setSelected] = useState(null);
   const [hovered, setHovered] = useState(null);
-  const stories = useRef(new Map()); // scene id → its SceneStory (to scroll to an indicator)
+  const story = useRef(null); // the SceneStory (to scroll to an indicator)
 
-  // Each story says which of its indicators is current while it holds the stage (or null).
+  // The story says which indicator is current while it holds the stage (or null).
   // The indicator a step is scrolling to: until it arrives, or for a moment at most (if the
   // reader scrolls elsewhere instead).
   const heading = useRef({ number: null, at: 0 });
-  const onActive = useCallback((sceneId, number) => {
+  const onActive = useCallback((storyId, number) => {
     if (number === heading.current.number) heading.current.number = null;
-    const mine = new Set(scenes.find((s) => s.id === sceneId).slots.map((slot) => slot.indicator));
-    setSelected((current) => (number !== null ? number : mine.has(current) ? null : current));
+    setSelected(number);
     setHovered(null);
   }, []);
 
@@ -60,29 +60,23 @@ export default function VisionExplorer() {
       const next = order[order.indexOf(from) + offset];
       if (next === undefined) return;
       heading.current = { number: next, at: performance.now() };
-      for (const story of stories.current.values()) if (story?.indicators.includes(next)) story.scrollTo(next, { focus });
+      story.current?.scrollTo(next, { focus });
     },
     [order],
   );
 
   return (
-    <div>
-      {scenes.map((scene, i) => (
-        <div key={scene.id} id={scene.id}>
-          <SceneStory
-            ref={(story) => stories.current.set(scene.id, story)}
-            scene={scene}
-            eager={i === 0}
-            indicatorsByNumber={indicatorsByNumber}
-            selected={selected}
-            hovered={hovered}
-            onHover={setHovered}
-            onActive={onActive}
-            onStep={onStep}
-            canStep={canStep}
-          />
-        </div>
-      ))}
-    </div>
+    <SceneStory
+      ref={story}
+      id="vision"
+      scenes={scenes}
+      indicatorsByNumber={indicatorsByNumber}
+      selected={selected}
+      hovered={hovered}
+      onHover={setHovered}
+      onActive={onActive}
+      onStep={onStep}
+      canStep={canStep}
+    />
   );
 }

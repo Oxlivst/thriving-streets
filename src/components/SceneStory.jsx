@@ -1,4 +1,6 @@
-// SceneStory: one scene told as a single scroll (like the BBC's scrollytelling pages).
+// SceneStory: the homepage's scenes told as a single scroll (like the BBC's scrollytelling
+// pages). One stage holds every scene: after a scene's last indicator the next scene takes
+// its place while the wheel stays, so the indicators run on without a break.
 //
 // The scene's block is tall; inside it a full-height stage holds still (sticky) while the
 // page scrolls through it, and the scroll position drives what happens on the stage:
@@ -8,7 +10,10 @@
 //      back up runs it in reverse.
 //   3. Then each indicator owns STEP_PX of scroll: the one whose step is current is
 //      selected, and the wheel crossfades to it.
-//   4. After the last indicator the stage scrolls away with the rest of the page.
+//   4. Between two scenes (halfway from one's last indicator to the next's first), the next
+//      scene comes up into the scene's place and the last one goes up and out (on narrow,
+//      stacked screens it comes up from behind the wheel). Scroll-linked, like the move aside.
+//   5. After the last indicator the stage scrolls away with the rest of the page.
 // There is no separate mode to open or close: it's all just the page scrolling.
 // Clicking an illustration, the ↓ / ↑ above the wheel, or the wheel's arrows, scrolls the
 // page to that indicator.
@@ -54,6 +59,7 @@ const stackFixed = (phone) => NAV_HEIGHT + STACK_GAP + 48 + 24 + 8 + (phone ? 0 
 const STACK_ART_SHARE = 0.42;
 const SETTLE_DEG = 14; // a new wheel eases this far into place (a hint that it turns)
 const FADE_MS = 600; // wheel crossfade
+const SWAP_PX = 360; // scroll over which one scene hands over to the next (centred between their steps)
 
 // Where the browser supports scroll-driven animations, the move aside runs on its own
 // scroll timeline (main.css, .story-scene / .story-wheel), off the main thread, so it
@@ -73,13 +79,19 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2); // ease in and out
 
 const SceneStory = forwardRef(function SceneStory(
-  { scene, eager, indicatorsByNumber, selected, hovered, onHover, onActive, onStep, canStep },
+  { id, scenes, indicatorsByNumber, selected, hovered, onHover, onActive, onStep, canStep },
   ref,
 ) {
-  const indicators = scene.slots.map((slot) => slot.indicator).sort((a, b) => a - b);
+  // Every scene's indicators in order, and where each scene's first one comes in that order.
+  const indicators = scenes.flatMap((scene) => scene.slots.map((slot) => slot.indicator).sort((a, b) => a - b));
+  const firstOf = scenes.map((_, k) => scenes.slice(0, k).reduce((n, scene) => n + scene.slots.length, 0));
+  // Scroll (from the start of the hold) where scene k (k ≥ 1) takes over: halfway between the
+  // last scene's last step and its own first step, over SWAP_PX.
+  const swapAt = (k) => ENTER_PX + (firstOf[k] - 0.5) * STEP_PX - SWAP_PX / 2;
   const narrow = useNarrow();
   const block = useRef(null);
-  const sceneEl = useRef(null);
+  const sceneEls = useRef([]); // each scene's moving element (the move aside)
+  const swapEls = useRef([]); // each scene's layer (the handover between scenes)
   const wheelEl = useRef(null);
   const [measureStage, stageW, stageH] = useWidth();
 
@@ -138,6 +150,10 @@ const SceneStory = forwardRef(function SceneStory(
   const wheelScale = Math.max(0.1, layout.wheelScale);
   const wheelTop = layout.ringTop + RING_RADIUS * wheelScale - (WHEEL_BOX.height / 2 - 50) * wheelScale;
   const blockHeight = stageH + ENTER_PX + indicators.length * STEP_PX;
+  // Handover: how far the next scene comes up from, and the last one goes up to (px).
+  const sceneH = (layout.toW * SCENE_BOX.height) / SCENE_BOX.width;
+  const swapFrom = narrow ? sceneH * 0.6 : stageH * 0.6;
+  const swapTo = narrow ? -sceneH * 0.35 : -stageH * 0.25;
 
   // Scroll position (page y) at which each indicator is the current one.
   const stepAt = useCallback(
@@ -169,7 +185,7 @@ const SceneStory = forwardRef(function SceneStory(
   const [current, setCurrent] = useState(indicators[0]);
   const [active, setActive] = useState(null); // the current indicator while its wheel shows
   const geometry = useRef(null);
-  geometry.current = { layout, fromW, fromLeft, blockHeight, stageH, narrow };
+  geometry.current = { layout, fromW, fromLeft, blockHeight, stageH, narrow, swapFrom, swapTo };
   const blockTop = useRef(0); // the block's top, in page coordinates
   const last = useRef({ t: -1, i: -1, active: undefined, held: false });
   const onActiveRef = useRef(onActive);
@@ -178,21 +194,34 @@ const SceneStory = forwardRef(function SceneStory(
     const g = geometry.current;
     if (!g.stageH) return;
     const y = window.scrollY - blockTop.current; // how far the stage has been held
-    // Fallback for browsers without scroll timelines: write the move aside, when it changes.
+    // Fallback for browsers without scroll timelines: write the move aside and the handovers,
+    // when they change.
     if (!SCROLL_TIMELINE) {
       const t = ease(clamp(y / ENTER_PX, 0, 1));
       if (Math.abs(t - last.current.t) > 0.0005) {
         last.current.t = t;
         const { layout: l } = g;
         const s = 1 + t * (l.toW / g.fromW - 1);
-        sceneEl.current.style.transform = `translateX(${(t * (l.toLeft - g.fromLeft)).toFixed(2)}px) scale(${s.toFixed(4)})`;
+        for (const el of sceneEls.current) {
+          if (!el) continue;
+          el.style.transform = `translateX(${(t * (l.toLeft - g.fromLeft)).toFixed(2)}px) scale(${s.toFixed(4)})`;
+          const title = el.querySelector('.scene-title');
+          const c = Number(el.style.getPropertyValue('--story-title-scale')) || 1;
+          if (title) title.style.scale = String(1 + t * (c - 1));
+        }
         wheelEl.current.style.opacity = t.toFixed(3);
         wheelEl.current.style.translate = g.narrow ? `0 ${((1 - t) * 32).toFixed(1)}px` : `${((1 - t) * 48).toFixed(1)}px 0`;
         wheelEl.current.style.visibility = t > 0.01 ? 'visible' : 'hidden';
-        const title = sceneEl.current.querySelector('.scene-title');
-        const c = Number(sceneEl.current.style.getPropertyValue('--story-title-scale')) || 1;
-        if (title) title.style.scale = String(1 + t * (c - 1));
       }
+      swapEls.current.forEach((el, k) => {
+        if (!el) return;
+        const comeIn = k === 0 ? 1 : ease(clamp((y - swapAt(k)) / SWAP_PX, 0, 1));
+        const goOut = k === swapEls.current.length - 1 ? 0 : ease(clamp((y - swapAt(k + 1)) / SWAP_PX, 0, 1));
+        const shown = comeIn * (1 - goOut);
+        el.style.opacity = shown.toFixed(3);
+        el.style.translate = `0 ${((1 - comeIn) * g.swapFrom + goOut * g.swapTo).toFixed(1)}px`;
+        el.style.visibility = shown > 0.01 ? 'visible' : 'hidden';
+      });
     }
     // The current indicator: the last one whose step is (more than) half reached.
     const i = clamp(Math.floor((y - ENTER_PX) / STEP_PX + 0.5), 0, indicators.length - 1);
@@ -205,16 +234,17 @@ const SceneStory = forwardRef(function SceneStory(
     if (active !== last.current.active) {
       last.current.active = active;
       setActive(active);
-      onActiveRef.current(scene.id, active);
+      onActiveRef.current(id, active);
     }
     // Firm snapping from where the stage starts to hold until it lets go (its last stop).
     const held = y >= -1 && y < g.blockHeight - g.stageH - 1;
     if (held !== last.current.held) {
       last.current.held = held;
-      setHolding(scene.id, held);
+      setHolding(id, held);
     }
-  }, [indicators, scene.id]);
-  useEffect(() => () => setHolding(scene.id, false), [scene.id]);
+    // (swapAt and indicators come from `scenes`, which doesn't change.)
+  }, [id]);
+  useEffect(() => () => setHolding(id, false), [id]);
   // Measure the block's place on the page now, and whenever the page's layout changes.
   // Also size the scene title: the whole scene shrinks as it moves aside, so the title
   // is counter-scaled to end at the size the focus view on main gives it (18px easing to
@@ -222,10 +252,10 @@ const SceneStory = forwardRef(function SceneStory(
   useLayoutEffect(() => {
     const measure = () => {
       blockTop.current = block.current.getBoundingClientRect().top + window.scrollY;
-      const art = sceneEl.current;
-      const title = art?.querySelector('.scene-title');
       const g = geometry.current;
-      if (title && g.stageH) {
+      for (const art of sceneEls.current) {
+        const title = art?.querySelector('.scene-title');
+        if (!title || !g.stageH) continue;
         const shrink = g.layout.toW / g.fromW; // the scene's scale once aside
         const startFont = parseFloat(getComputedStyle(title).fontSize);
         const endFont = clamp(0.036 * g.layout.toW, 16, startFont);
@@ -295,7 +325,7 @@ const SceneStory = forwardRef(function SceneStory(
       className="scene-story relative overflow-x-clip"
       style={{ height: stageH ? blockHeight : '100lvh', '--story-enter': `${ENTER_PX}px` }}
     >
-      {/* Stops: the start of the hold, each indicator, and where the stage lets go. */}
+      {/* Stops: the start of the hold, each indicator (across every scene), and where the stage lets go. */}
       {[0, ...indicators.map((_, i) => ENTER_PX + i * STEP_PX), ENTER_PX + indicators.length * STEP_PX].map((at) => (
         <span key={at} className="story-snap" style={{ top: at }} aria-hidden="true" />
       ))}
@@ -307,29 +337,71 @@ const SceneStory = forwardRef(function SceneStory(
       <div ref={measureStage} className="scene-story__stage sticky top-0 h-lvh">
         {stageW > 0 && (
           <>
-            {/* The scene: laid out at its page size in the middle, then moved and scaled aside. */}
-            <div
-              ref={sceneEl}
-              className="story-scene absolute origin-top-left will-change-transform"
-              style={{
-                left: fromLeft,
-                top: layout.sceneTop,
-                width: fromW,
-                '--story-dx': `${(layout.toLeft - fromLeft).toFixed(2)}px`,
-                '--story-scale': (layout.toW / fromW).toFixed(4),
-              }}
-            >
-              <Scene
-                scene={scene}
-                scale={fromScale}
-                eager={eager}
-                indicatorsByNumber={indicatorsByNumber}
-                selected={selected}
-                hovered={hovered}
-                onHover={onHover}
-                onSelect={select}
-              />
-            </div>
+            {/* The scenes, one layer each: laid out at the page size in the middle, then moved
+                and scaled aside; between scenes, one layer hands over to the next. */}
+            {scenes.map((scene, k) => {
+              const last = k === scenes.length - 1;
+              // Scroll-timeline handover: come in (all but the first), go out (all but the last).
+              // "Go out" only fills forwards, so before its range the "come in" end state shows.
+              const handover = [
+                k > 0 && { name: 'story-swap-in', range: swapAt(k), fill: 'both' },
+                !last && { name: 'story-swap-out', range: swapAt(k + 1), fill: 'forwards' },
+              ].filter(Boolean);
+              // Narrow, stacked screens: a scene coming in rises from behind the wheel, so it's
+              // masked at the top of the wheel's row (the mask holds still while the scene moves).
+              const fromBehind = narrow && k > 0;
+              return (
+                <div
+                  key={scene.id}
+                  className="pointer-events-none absolute inset-0"
+                  style={
+                    fromBehind
+                      ? { clipPath: `inset(0 0 ${(stageH - (layout.headerLine - HEADER_HEIGHT / 2)).toFixed(1)}px 0)` }
+                      : undefined
+                  }
+                >
+                  <div
+                    ref={(el) => (swapEls.current[k] = el)}
+                    className="story-swap pointer-events-none absolute inset-0"
+                    style={{
+                      '--swap-from': `${swapFrom.toFixed(1)}px`,
+                      '--swap-to': `${swapTo.toFixed(1)}px`,
+                      ...(SCROLL_TIMELINE && handover.length
+                        ? {
+                            animationName: handover.map((h) => h.name).join(', '),
+                            animationRange: handover.map((h) => `contain ${h.range}px contain ${h.range + SWAP_PX}px`).join(', '),
+                            animationFillMode: handover.map((h) => h.fill).join(', '),
+                          }
+                        : {}),
+                      ...(!SCROLL_TIMELINE && k > 0 ? { opacity: 0, visibility: 'hidden' } : {}),
+                    }}
+                  >
+                    <div
+                      ref={(el) => (sceneEls.current[k] = el)}
+                      className="story-scene pointer-events-auto absolute origin-top-left will-change-transform"
+                      style={{
+                        left: fromLeft,
+                        top: layout.sceneTop,
+                        width: fromW,
+                        '--story-dx': `${(layout.toLeft - fromLeft).toFixed(2)}px`,
+                        '--story-scale': (layout.toW / fromW).toFixed(4),
+                      }}
+                    >
+                      <Scene
+                        scene={scene}
+                        scale={fromScale}
+                        eager={k === 0}
+                        indicatorsByNumber={indicatorsByNumber}
+                        selected={selected}
+                        hovered={hovered}
+                        onHover={onHover}
+                        onSelect={select}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
 
             {/* The wheel and its ?, easing in beside (or below) the scene. */}
             <div

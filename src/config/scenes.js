@@ -67,4 +67,22 @@ export const scenes = [
       },
     ],
   },
+  {
+    // Figma: Scene 2 (file BWfZznPABe6QYhxxBGhOdp, node 6973:6044), drawn 533px wide there:
+    // positions are scaled up by 640 / 533.17 to the scene box. Halos not designed yet: each is
+    // centred on its drawing, 1.1 × its shorter side (as the scene 1 estimates are).
+    // Figma's layers "Indicator-10" and "Indicator-11" hold the "20" sign and the gathering
+    // respectively; here they follow the indicator texts (10: people of all ages and backgrounds
+    // together in public space; 11: feeling safe getting around), so 10 is the gathering.
+    id: 'scene-2',
+    title: 'Going down the street, you observe:',
+    slots: [
+      { indicator: 7, depth: -0.4, x: 212.56, y: 0, width: 333.59, height: 200.88, halo: { x: 269, y: -10, size: 221 } },
+      { indicator: 8, depth: 0.5, x: 340.3, y: 175.61, width: 225.89, height: 164.98, halo: { x: 363, y: 168, size: 181 } },
+      { indicator: 6, depth: 0.3, x: 59.19, y: 109.85, width: 284.78, height: 230.32, halo: { x: 75, y: 99, size: 253 } },
+      { indicator: 9, depth: -0.5, x: 0, y: 323.66, width: 399.74, height: 216.21, halo: { x: 81, y: 313, size: 238 } },
+      { indicator: 10, depth: 0.6, x: 266.48, y: 290.49, width: 373.52, height: 283.17, halo: { x: 298, y: 277, size: 311 } },
+      { indicator: 11, depth: 0.8, x: 138.04, y: 487.34, width: 230.32, height: 154.49, halo: { x: 168, y: 480, size: 170 } },
+    ],
+  },
 ];
