@@ -44,7 +44,7 @@ const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)')
 // ----- Component -------------------------------------------------------------
 // settleFrom (optional, degrees): the wheel appears turned this far from its resting angle,
 // eases into place, and only then fans out its factors, hinting that the wheel turns.
-export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, hasNext, settleFrom = 0 }) {
+export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, hasNext, settleFrom = 0, startTheme }) {
   const uid = useId().replace(/:/g, '');
 
   // Ticked factors grouped by theme, in ring order starting from the bottom.
@@ -59,10 +59,13 @@ export default function IndicatorWheel({ indicator, onPrev, onNext, hasPrev, has
       .map((t) => ({ ...t, factors: byTheme.get(t.key) }));
   }, [indicator]);
 
-  // Opens on the theme with the most ticked factors (on a tie, the first in ring order).
-  const [startIndex] = useState(() =>
-    mapped.reduce((best, theme, i) => (theme.factors.length > mapped[best].factors.length ? i : best), 0),
-  );
+  // Opens on `startTheme` when given (and mapped), otherwise on the theme with the most
+  // ticked factors (on a tie, the first in ring order).
+  const [startIndex] = useState(() => {
+    const asked = mapped.findIndex((theme) => theme.key === startTheme);
+    if (asked >= 0) return asked;
+    return mapped.reduce((best, theme, i) => (theme.factors.length > mapped[best].factors.length ? i : best), 0);
+  });
   // Steps taken round the ring from the starting theme: forwards up to count - 1,
   // backwards down to -(count - 1).
   const [step, setStep] = useState(0);
