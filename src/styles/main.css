@@ -1178,6 +1178,16 @@
     @apply mt-12 px-8;
   }
 
+  /* The overview at the top: always open, its text lined up with the sections' text. */
+  .about-overview {
+    @apply flex flex-col gap-6 px-8;
+    scroll-margin-top: 100px;
+  }
+
+  .about-overview__title {
+    @apply font-heading text-h1 font-semibold text-text;
+  }
+
   /* The section's one-line summary, in bold above the text. */
   .about-section__lead {
     @apply font-bold;
@@ -1261,7 +1271,8 @@
     /* Text keeps nearly the full column (the 32px side padding is for wider screens). */
     .factor__name,
     .factor__summary,
-    .about-section__body {
+    .about-section__body,
+    .about-overview {
       @apply px-2;
     }
 
