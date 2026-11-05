@@ -31,7 +31,7 @@ for (const section of sections) {
 // Going to a section (from the side nav, a link or the address) opens it if it's closed.
 const openTarget = () => {
   const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
-  if (target?.classList.contains('about-section')) setOpen(target, true);
+  if (target instanceof Element && target.classList.contains('about-section')) setOpen(target, true);
   else if (target instanceof HTMLDetailsElement) target.open = true;
 };
 window.addEventListener('hashchange', openTarget);
