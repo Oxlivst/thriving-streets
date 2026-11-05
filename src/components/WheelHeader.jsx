@@ -1,7 +1,7 @@
 // WheelHeader: the row above the wheel on the scroll homepage. The ? (help) on the left,
-// then a bar with the indicator's number and a ↑ button, then a ↓ button. ↑ / ↓ move one
+// then a bar with the indicator's number and the ↑ and ↓ buttons. ↑ / ↓ move one
 // indicator at a time, as scrolling does. The help opens over the bar.
-// Colours: the bar is Background-secondary; the round buttons are Background-tertiary.
+// Colours: the bar is Background-primary; the round buttons are Background-tertiary.
 // Phones show only the ? (main.css).
 
 import WheelHelp from './WheelHelp.jsx';
@@ -39,13 +39,21 @@ export default function WheelHeader({ number, total, width, onPrev, onNext, hasP
             Indicator {number} of {total}
           </span>
         </p>
-        <button type="button" className="wheel-header__button" onClick={onPrev} disabled={!hasPrev} aria-label="Previous indicator">
-          <Chevron up />
-        </button>
+        <div className="wheel-header__arrows">
+          <button
+            type="button"
+            className="wheel-header__button"
+            onClick={onPrev}
+            disabled={!hasPrev}
+            aria-label="Previous indicator"
+          >
+            <Chevron up />
+          </button>
+          <button type="button" className="wheel-header__button" onClick={onNext} disabled={!hasNext} aria-label="Next indicator">
+            <Chevron />
+          </button>
+        </div>
       </div>
-      <button type="button" className="wheel-header__button" onClick={onNext} disabled={!hasNext} aria-label="Next indicator">
-        <Chevron />
-      </button>
     </div>
   );
 }

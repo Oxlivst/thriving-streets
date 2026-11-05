@@ -421,7 +421,7 @@
   }
 
   /* ----- The row above the wheel (scroll homepage, WheelHeader.jsx) -----
-     The ?, a bar with the indicator's number and ↓, then ↑. 48px tall, 16px apart. */
+     The ?, then a bar with the indicator's number, ↑ and ↓. 48px tall, 16px apart. */
   .wheel-header {
     @apply relative flex max-w-full items-center gap-4;
   }
@@ -436,7 +436,11 @@
   }
 
   .wheel-header__bar {
-    @apply flex h-12 min-w-0 flex-1 items-center justify-between rounded-full bg-bg-alt pl-6;
+    @apply flex h-12 min-w-0 flex-1 items-center justify-between gap-4 rounded-full bg-bg pl-6;
+  }
+
+  .wheel-header__arrows {
+    @apply flex shrink-0 gap-4;
   }
 
   .wheel-header__label {
@@ -458,8 +462,7 @@
 
   /* Phones: only the ? (scrolling or tapping the scene moves between indicators). */
   @media (max-width: 699.98px) {
-    .wheel-header__bar,
-    .wheel-header > .wheel-header__button {
+    .wheel-header__bar {
       @apply hidden;
     }
   }
