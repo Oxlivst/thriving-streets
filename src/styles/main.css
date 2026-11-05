@@ -74,6 +74,16 @@
   /* ===== Top navigation ================================================= */
   /* Transparent over the hero's tint; turns white once the page scrolls (hero.js). */
   /* Solid light background at all times, so it reads clearly over the white page. */
+  /* JavaScript notice (each page's body, first): shown only when JavaScript is off or the
+     site's scripts didn't load (the rule hiding it is in each page's head). */
+  .js-notice {
+    @apply bg-text px-4 py-3 text-center text-[0.875rem] leading-[1.3125rem] text-white;
+  }
+
+  .js-notice p {
+    @apply mx-auto max-w-[640px] text-pretty;
+  }
+
   .site-header {
     @apply sticky top-0 z-30 bg-nav-bg;
     transition: translate 500ms var(--ease-smooth);
@@ -725,6 +735,12 @@
     .side-nav {
       @apply static w-0 shrink-0 p-0;
       margin-top: 0;
+    }
+
+    /* The plain links in the page (before SectionNav replaces them with the drawer) have no
+       room here, so they're hidden; the sections are still there to scroll through. */
+    .side-nav > .side-nav__list {
+      @apply hidden;
     }
   }
 
