@@ -85,4 +85,18 @@ export const scenes = [
       { indicator: 11, depth: 0.8, x: 138.04, y: 487.34, width: 230.32, height: 154.49, halo: { x: 168, y: 480, size: 170 } },
     ],
   },
+  {
+    // Figma: Scene 3 (file BWfZznPABe6QYhxxBGhOdp, node 6974:6075), drawn 520px wide there:
+    // positions are scaled up by 640 / 520 to the scene box. Halos not designed yet: centred
+    // estimates, as for scene 2.
+    id: 'scene-3',
+    title: 'Let’s explore the neighbourhoods across your town...',
+    slots: [
+      { indicator: 12, depth: -0.4, x: 0, y: 0, width: 301.97, height: 241.13, halo: { x: 18, y: -12, size: 265 } },
+      { indicator: 13, depth: 0.4, x: 220.85, y: 11.27, width: 287.32, height: 229.86, halo: { x: 238, y: 0, size: 253 } },
+      { indicator: 14, depth: -0.5, x: 365.07, y: 126.2, width: 274.93, height: 214.08, halo: { x: 385, y: 116, size: 235 } },
+      { indicator: 15, depth: 0.6, x: 81.13, y: 224.23, width: 278.31, height: 283.94, halo: { x: 67, y: 213, size: 306 } },
+      { indicator: 16, depth: 0.8, x: 301.97, y: 325.63, width: 321.13, height: 271.55, halo: { x: 313, y: 312, size: 299 } },
+    ],
+  },
 ];
