@@ -90,6 +90,9 @@ function LensRing() {
   );
 }
 
+// Each band links to its factor's summary further down the page (ThemesGuide). The wheel
+// is a picture to screen readers (the factors are listed below), so the links are for
+// pointer and touch only, and only take clicks once the bands have come in.
 function FactorBands() {
   return (
     <svg className="themes-wheel__factors" viewBox={`0 0 ${BOX.width} ${BOX.height}`} aria-hidden="true">
@@ -110,8 +113,10 @@ function FactorBands() {
                 const id = `themes-band-${theme.key}-${i}`;
                 const name = FACTOR_LABELS[factor.key] ?? factor.name;
                 return (
-                  <g
+                  <a
                     key={factor.key}
+                    href={`#${factor.key}`}
+                    tabIndex={-1}
                     className="themes-wheel__band"
                     data-i={i}
                     data-dx={dx.toFixed(3)}
@@ -119,6 +124,7 @@ function FactorBands() {
                     style={{ '--i': i, '--dx': dx.toFixed(3), '--dy': dy.toFixed(3) }}
                   >
                     <path
+                      className="themes-wheel__band-fill"
                       d={sectorPath(inner, outer, centre, BAND.corner)}
                       fill={themeBg(theme.key)}
                       stroke={themeBg(theme.key)}
@@ -138,7 +144,7 @@ function FactorBands() {
                         {name}
                       </textPath>
                     </text>
-                  </g>
+                  </a>
                 );
               })}
             </g>
@@ -181,6 +187,7 @@ export default function ThemesWheel() {
           part.el.style.transform = `translate(${part.dx * v * COLLAGE_DRIFT_PX}px, ${part.dy * v * COLLAGE_DRIFT_PX}px) scale(${1 - v * 0.06})`;
         } else {
           part.el.style.opacity = String(v);
+          part.el.style.pointerEvents = v > 0.6 ? 'auto' : 'none'; // clickable once it's mostly in
           part.el.style.transform = `translate(${part.dx * (v - 1) * BAND_DRIFT_PX}px, ${part.dy * (v - 1) * BAND_DRIFT_PX}px)`;
         }
       }

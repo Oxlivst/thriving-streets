@@ -644,6 +644,23 @@
 
   .themes-wheel__band {
     opacity: 0;
+    cursor: pointer;
+    pointer-events: none; /* until it has come in (ThemesWheel) */
+  }
+
+  /* A band links to its factor's summary below; pointing at it deepens its colour. */
+  .themes-wheel__band-fill {
+    transition: opacity 300ms var(--ease-smooth);
+  }
+
+  @media (hover: hover) {
+    .themes-wheel__band:hover .themes-wheel__band-fill {
+      opacity: 0.45;
+    }
+  }
+
+  .factor {
+    scroll-margin-top: 100px;
   }
 
   /* Touch screens and phones (data-mode="timed"): the swap plays once as a crossfade
@@ -668,6 +685,7 @@
 
   .themes-wheel[data-mode='timed'][data-swapped='true'] .themes-wheel__band {
     opacity: 1;
+    pointer-events: auto;
     transform: none;
     transition-delay: calc(250ms + (var(--i) + 1) * 90ms);
   }
@@ -805,6 +823,72 @@
 
   .factor__summary {
     @apply flex flex-col gap-[18px] px-8 py-6 text-body text-pretty text-text;
+  }
+
+  /* Example indicator wheel between the overview's two blocks (themes.html). */
+  .themes-figure {
+    @apply flex flex-col items-center gap-4;
+  }
+
+  .themes-figure img {
+    @apply h-auto w-full;
+  }
+
+  .themes-figure figcaption {
+    @apply max-w-[540px] text-center text-[0.875rem] leading-[1.3125rem] text-pretty text-text-muted;
+  }
+
+  /* The indicators that map to a factor, under its summary: three to a row, each drawing
+     up to 152px tall. Hover lifts one a little; a click opens its wheel (IndicatorModal). */
+  .factor__indicators {
+    @apply grid grid-cols-3 gap-x-4 gap-y-8 px-8;
+  }
+
+  .factor__indicator {
+    @apply flex h-[152px] cursor-pointer items-center justify-center rounded-[12px] border-0 bg-transparent p-0;
+    transition: scale var(--duration-fade) var(--ease-smooth);
+  }
+
+  .factor__indicator img {
+    @apply max-h-full w-auto max-w-full object-contain;
+  }
+
+  @media (hover: hover) {
+    .factor__indicator:hover {
+      scale: 1.08;
+    }
+  }
+
+  .factor__indicator:focus-visible {
+    scale: 1.08;
+  }
+
+  @media (max-width: 699.98px) {
+    .factor__indicators {
+      @apply gap-x-2 gap-y-4 px-2;
+    }
+
+    .factor__indicator {
+      @apply h-[96px];
+    }
+  }
+
+  /* The indicator's wheel, in a dialog over the page. */
+  .indicator-modal {
+    @apply m-auto max-h-[calc(100svh-32px)] w-[min(680px,calc(100vw-32px))] overflow-y-auto rounded-[24px] border-0 bg-white p-0 text-text;
+    box-shadow: 0 24px 64px rgb(23 37 91 / 0.18);
+  }
+
+  .indicator-modal::backdrop {
+    background: rgb(23 37 91 / 0.35);
+  }
+
+  .indicator-modal[open] {
+    animation: fade-in 300ms var(--ease-smooth) both;
+  }
+
+  .indicator-modal__close {
+    @apply absolute top-4 right-4 z-10;
   }
 
   /* ===== About page ====================================================== */
