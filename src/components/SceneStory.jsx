@@ -246,7 +246,9 @@ const SceneStory = forwardRef(function SceneStory(
   return (
     <div
       ref={block}
-      className="scene-story relative"
+      // overflow-x-clip: the wheel waits partly off the right edge before it slides in; clip
+      // (not hidden) so the sticky stage still sticks.
+      className="scene-story relative overflow-x-clip"
       style={{ height: stageH ? blockHeight : '100lvh', '--story-enter': `${ENTER_PX}px` }}
     >
       {/* Stops: the start of the hold, each indicator, and where the stage lets go. */}
