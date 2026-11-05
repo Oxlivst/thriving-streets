@@ -1198,6 +1198,11 @@
     @apply text-label-hint text-text-muted;
   }
 
+  /* A caption that reads as part of the text: 14/21, centred under the image. */
+  .about-figure .about-figure__caption--large {
+    @apply text-center text-[0.875rem] leading-[1.3125rem] text-pretty;
+  }
+
   .about-quote {
     @apply flex flex-col gap-2 border-l-4 border-bg-tertiary pl-4 italic;
   }
