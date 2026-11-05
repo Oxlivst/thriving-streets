@@ -41,6 +41,11 @@ const STACK_GAP = 32; // narrow screens: space between the nav and the scene's t
 const SETTLE_DEG = 14; // a new wheel eases this far into place (a hint that it turns)
 const FADE_MS = 600; // wheel crossfade
 
+// Where the browser supports scroll-driven animations, the move aside runs on its own
+// scroll timeline (main.css, .story-scene / .story-wheel), off the main thread, so it
+// stays smooth on phones. Elsewhere the scroll handler below writes it each frame.
+const SCROLL_TIMELINE = typeof CSS !== 'undefined' && CSS.supports('animation-timeline: --story');
+
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2); // ease in and out
 
@@ -114,47 +119,66 @@ const SceneStory = forwardRef(function SceneStory(
     stepAt,
   ]);
 
-  // ----- Scroll drives the stage. The move aside is written straight to the elements
-  // (no re-render per frame); React only hears about it when the current indicator changes.
+  // ----- Scroll drives the stage. Per frame this only reads window.scrollY (the block's
+  // place on the page is measured when the layout changes, not on every scroll), and
+  // React only hears about it when the current indicator changes.
   const [current, setCurrent] = useState(indicators[0]);
   const geometry = useRef(null);
   geometry.current = { layout, fromW, fromLeft, blockHeight, stageH, narrow };
-  const activeRef = useRef(null);
+  const blockTop = useRef(0); // the block's top, in page coordinates
+  const last = useRef({ t: -1, i: -1, active: undefined });
   const onActiveRef = useRef(onActive);
   onActiveRef.current = onActive;
   const update = useCallback(() => {
     const g = geometry.current;
-    if (!block.current || !g.stageH) return;
-    const y = -block.current.getBoundingClientRect().top; // how far the stage has been held
-    const t = ease(clamp(y / ENTER_PX, 0, 1));
-    const { layout: l } = g;
-    const s = 1 + t * (l.toW / g.fromW - 1);
-    if (sceneEl.current) sceneEl.current.style.transform = `translateX(${(t * (l.toLeft - g.fromLeft)).toFixed(2)}px) scale(${s.toFixed(4)})`;
-    if (wheelEl.current) {
-      wheelEl.current.style.opacity = t.toFixed(3);
-      wheelEl.current.style.translate = g.narrow ? `0 ${((1 - t) * 32).toFixed(1)}px` : `${((1 - t) * 48).toFixed(1)}px 0`;
-      wheelEl.current.style.visibility = t > 0.01 ? 'visible' : 'hidden';
+    if (!g.stageH) return;
+    const y = window.scrollY - blockTop.current; // how far the stage has been held
+    // Fallback for browsers without scroll timelines: write the move aside, when it changes.
+    if (!SCROLL_TIMELINE) {
+      const t = ease(clamp(y / ENTER_PX, 0, 1));
+      if (Math.abs(t - last.current.t) > 0.0005) {
+        last.current.t = t;
+        const { layout: l } = g;
+        const s = 1 + t * (l.toW / g.fromW - 1);
+        sceneEl.current.style.transform = `translateX(${(t * (l.toLeft - g.fromLeft)).toFixed(2)}px) scale(${s.toFixed(4)})`;
+        wheelEl.current.style.opacity = t.toFixed(3);
+        wheelEl.current.style.translate = g.narrow ? `0 ${((1 - t) * 32).toFixed(1)}px` : `${((1 - t) * 48).toFixed(1)}px 0`;
+        wheelEl.current.style.visibility = t > 0.01 ? 'visible' : 'hidden';
+      }
     }
     // The current indicator: the last one whose step is (more than) half reached.
     const i = clamp(Math.floor((y - ENTER_PX) / STEP_PX + 0.5), 0, indicators.length - 1);
-    setCurrent(indicators[i]);
+    if (i !== last.current.i) {
+      last.current.i = i;
+      setCurrent(indicators[i]);
+    }
     // Selected (scene highlights it) once the wheel is mostly in, until the stage leaves.
     const active = y >= ENTER_PX * 0.6 && y <= g.blockHeight - g.stageH ? indicators[i] : null;
-    if (active !== activeRef.current) {
-      activeRef.current = active;
+    if (active !== last.current.active) {
+      last.current.active = active;
       onActiveRef.current(scene.id, active);
     }
   }, [indicators, scene.id]);
-  useLayoutEffect(update);
+  // Measure the block's place on the page now, and whenever the page's layout changes.
+  useLayoutEffect(() => {
+    const measure = () => {
+      blockTop.current = block.current.getBoundingClientRect().top + window.scrollY;
+      last.current.t = -1; // repaint the fallback
+      update();
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(document.body);
+    observer.observe(block.current);
+    return () => observer.disconnect();
+  }, [update, blockHeight]);
   useEffect(() => {
     let frame = 0;
     const onScroll = () => (frame ||= requestAnimationFrame(() => ((frame = 0), update())));
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
     };
   }, [update]);
 
@@ -176,7 +200,11 @@ const SceneStory = forwardRef(function SceneStory(
   const select = useCallback((n) => window.scrollTo({ top: stepAt(n), behavior: 'smooth' }), [stepAt]);
 
   return (
-    <div ref={block} className="scene-story relative" style={{ height: stageH ? blockHeight : '100svh' }}>
+    <div
+      ref={block}
+      className="scene-story relative"
+      style={{ height: stageH ? blockHeight : '100svh', '--story-enter': `${ENTER_PX}px` }}
+    >
       {[0, ...indicators.map((_, i) => ENTER_PX + i * STEP_PX)].map((at) => (
         <span key={at} className="story-snap" style={{ top: at }} aria-hidden="true" />
       ))}
@@ -186,8 +214,14 @@ const SceneStory = forwardRef(function SceneStory(
             {/* The scene: laid out at its page size in the middle, then moved and scaled aside. */}
             <div
               ref={sceneEl}
-              className="absolute origin-top-left will-change-transform"
-              style={{ left: fromLeft, top: layout.sceneTop, width: fromW }}
+              className="story-scene absolute origin-top-left will-change-transform"
+              style={{
+                left: fromLeft,
+                top: layout.sceneTop,
+                width: fromW,
+                '--story-dx': `${(layout.toLeft - fromLeft).toFixed(2)}px`,
+                '--story-scale': (layout.toW / fromW).toFixed(4),
+              }}
             >
               <Scene
                 scene={scene}
@@ -204,8 +238,13 @@ const SceneStory = forwardRef(function SceneStory(
             {/* The wheel and its ?, easing in beside (or below) the scene. */}
             <div
               ref={wheelEl}
-              className="absolute top-0 h-full"
-              style={{ left: layout.wheelLeft, width: layout.wheelW, opacity: 0, visibility: 'hidden' }}
+              className="story-wheel absolute top-0 h-full"
+              style={{
+                left: layout.wheelLeft,
+                width: layout.wheelW,
+                '--story-from': narrow ? '0 32px' : '48px 0',
+                ...(SCROLL_TIMELINE ? {} : { opacity: 0, visibility: 'hidden' }),
+              }}
             >
               <div
                 className="absolute inset-x-0 z-10 flex items-start"
