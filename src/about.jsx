@@ -14,10 +14,25 @@ const items = sections.map((section) => ({
 const navRoot = document.getElementById('side-nav');
 if (navRoot) createRoot(navRoot).render(<SectionNav items={items} />);
 
+// Each section's header button opens and closes it. Sections marked data-closed start
+// closed; without JavaScript they all stay open.
+const setOpen = (section, open) => {
+  const button = section.querySelector('.about-section__header');
+  button.setAttribute('aria-expanded', String(open));
+  document.getElementById(button.getAttribute('aria-controls')).hidden = !open;
+};
+for (const section of sections) {
+  if (section.hasAttribute('data-closed')) setOpen(section, false);
+  section.querySelector('.about-section__header').addEventListener('click', (e) => {
+    setOpen(section, e.currentTarget.getAttribute('aria-expanded') !== 'true');
+  });
+}
+
 // Going to a section (from the side nav, a link or the address) opens it if it's closed.
 const openTarget = () => {
   const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
-  if (target instanceof HTMLDetailsElement) target.open = true;
+  if (target?.classList.contains('about-section')) setOpen(target, true);
+  else if (target instanceof HTMLDetailsElement) target.open = true;
 };
 window.addEventListener('hashchange', openTarget);
 document.addEventListener('click', (e) => {

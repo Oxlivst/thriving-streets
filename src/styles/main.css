@@ -880,18 +880,15 @@
 
   /* ===== About page ====================================================== */
   /* Figma: Wireframe - 56 (file BWfZznPABe6QYhxxBGhOdp, node 6923:6337). Each question is a
-     <details> section: its header bar (the summary) opens and closes it. */
+     section with a heading whose button (its header bar) opens and closes it (src/about.jsx);
+     without JavaScript every section stays open. */
   .about-section {
     scroll-margin-top: 100px;
   }
 
   .about-section__header {
-    @apply flex cursor-pointer list-none items-center gap-2.5 rounded-[12px] bg-bg-alt px-6 py-3 text-text;
+    @apply flex w-full cursor-pointer items-center gap-2.5 rounded-[12px] bg-bg-alt px-6 py-3 text-left text-text;
     transition: background-color 300ms var(--ease-smooth);
-  }
-
-  .about-section__header::-webkit-details-marker {
-    display: none;
   }
 
   .about-section__header:hover {
@@ -911,7 +908,7 @@
     transition: rotate 300ms var(--ease-smooth);
   }
 
-  .about-section:not([open]) .about-section__chevron {
+  .about-section__header[aria-expanded='false'] .about-section__chevron {
     rotate: 180deg;
   }
 

@@ -44,7 +44,7 @@
   --color-theme-living-with-nature-bg: #429362;
   --color-theme-living-with-nature-text: #236b3f;
   --color-theme-healthy-lives-bg: #e56161;
-  --color-theme-healthy-lives-text: #c85159;
+  --color-theme-healthy-lives-text: #b0474e; /* darkened from #c85159 for 4.5:1 contrast */
   --color-theme-economic-vitality-bg: #ba6c86;
   --color-theme-economic-vitality-text: #89324f;
   --color-theme-community-agency-bg: #c98553;

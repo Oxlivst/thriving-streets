@@ -131,6 +131,14 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
     return () => clearTimeout(t);
   }, [selected]);
 
+  // Screen readers: say which indicator is now showing when it changes (not on opening,
+  // when the dialog's own name says it).
+  const [announcement, setAnnouncement] = useState('');
+  const openedWith = useRef(selected);
+  useEffect(() => {
+    if (selected !== openedWith.current) setAnnouncement(`Showing: ${indicatorsByNumber.get(selected).text}`);
+  }, [selected, indicatorsByNumber]);
+
   // Freeze the page behind; keep the nav shown (this view starts right below it); focus the dialog.
   useEffect(() => {
     const html = document.documentElement;
@@ -230,10 +238,27 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
   requestCloseRef.current = requestClose;
   const dismiss = useCallback(() => requestCloseRef.current(), []);
 
-  // Esc closes the focus view.
+  // Esc closes the focus view. Tab and Shift+Tab stay inside it (it covers the page), so
+  // keyboard focus doesn't slip to the nav or the page behind it.
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') requestClose();
+      if (e.key !== 'Tab') return;
+      const dialog = dialogRef.current;
+      const items = [...dialog.querySelectorAll('a[href], button, [tabindex]:not([tabindex="-1"])')].filter(
+        (el) => !el.disabled && !el.closest('[inert], [aria-hidden="true"]') && el.getClientRects().length,
+      );
+      if (!items.length) return;
+      const first = items[0];
+      const last = items.at(-1);
+      const inside = dialog.contains(document.activeElement);
+      if (e.shiftKey && (!inside || document.activeElement === first || document.activeElement === dialog)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -258,6 +283,10 @@ export default function FocusView({ indicatorsByNumber, selected, hovered, onHov
       aria-label={indicatorsByNumber.get(selected).text}
       tabIndex={-1}
     >
+      <p className="sr-only" aria-live="polite">
+        {announcement}
+      </p>
+
       {/* ----- The view's one scroll ----- */}
       {/* No scroll anchoring: with sticky content it would nudge the scroll position on every
           re-render, which here selects the next indicator, and so on. */}
