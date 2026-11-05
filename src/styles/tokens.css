@@ -32,7 +32,7 @@
      (behind the nav) to white at the hero's bottom edge. */
   --color-hero-tint: var(--color-bg);
   --color-nav-bg: var(--color-bg); /* top navigation bar: Background-primary */
-  --color-bg-tertiary: #eeccad; /* Background-tertiary: hero title shadow, close button */
+  --color-bg-tertiary: #f5d7bc; /* Background-tertiary: the round buttons by the wheel, quote borders */
 
   /* ---- Theme colours (spec §3.1.1) --------------------------------------
      -bg: solid fills with white text · -text: text on light backgrounds.

@@ -10,13 +10,14 @@
 //      selected, and the wheel crossfades to it.
 //   4. After the last indicator the stage scrolls away with the rest of the page.
 // There is no separate mode to open or close: it's all just the page scrolling.
-// Clicking an illustration, or the wheel's arrows, scrolls the page to that indicator.
+// Clicking an illustration, the ↓ / ↑ above the wheel, or the wheel's arrows, scrolls the
+// page to that indicator.
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { SCENE_BOX } from '../config/scenes.js';
 import Scene from './Scene.jsx';
 import IndicatorWheel, { RING_RADIUS } from './IndicatorWheel.jsx';
-import WheelHelp from './WheelHelp.jsx';
+import WheelHeader from './WheelHeader.jsx';
 import useWidth from '../hooks/useWidth.js';
 import useNarrow from '../hooks/useNarrow.js';
 
@@ -24,10 +25,12 @@ import useNarrow from '../hooks/useNarrow.js';
 const scrollBehaviour = () => (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
 
 // Vertical layout, in px from the top of the window (the nav is 60px tall): the scene
-// title and the ? sit on HEADER_CENTRE_Y, and the wheel's ring starts on that line.
+// title and the row above the wheel (?, indicator bar, ↓ / ↑) sit on HEADER_CENTRE_Y,
+// and the wheel's ring starts WHEEL_GAP below that row.
 const NAV_HEIGHT = 60;
 const HEADER_CENTRE_Y = 125;
 const HEADER_HEIGHT = 48;
+const WHEEL_GAP = { wide: 40, narrow: 20 };
 const TITLE_TOP = HEADER_CENTRE_Y - 13.5; // scene title (27px line) centred on the row
 
 // Scroll lengths match the focus view on main (480px per indicator).
@@ -43,8 +46,8 @@ const WHEEL_BOX = { width: 600, height: 700 }; // IndicatorWheel's own coordinat
 const WHEEL_DRAWN_HEIGHT = 640; // ring top to the bottom of a third factor band, at scale 1
 const STACK_GAP = 20; // narrow screens: space between the nav and the scene's title
 // Narrow screens: the drawing and the wheel share the height left after the fixed parts
-// (nav, gap, two-line title, gaps, the ? row's top half, bottom margin), about 42 : 58.
-const STACK_FIXED = NAV_HEIGHT + STACK_GAP + 48 + 24 + 8 + HEADER_HEIGHT / 2 + 16;
+// (nav, gap, two-line title, gaps, the header row, the gap under it, bottom margin), about 42 : 58.
+const STACK_FIXED = NAV_HEIGHT + STACK_GAP + 48 + 24 + 8 + HEADER_HEIGHT + WHEEL_GAP.narrow + 16;
 const STACK_ART_SHARE = 0.42;
 const SETTLE_DEG = 14; // a new wheel eases this far into place (a hint that it turns)
 const FADE_MS = 600; // wheel crossfade
@@ -89,7 +92,8 @@ const SceneStory = forwardRef(function SceneStory(
     const sceneColLeft = (stageW - gridW) / 2 + GRID_PAD;
     const toW = Math.min(SCENE_BOX.width, halfW * SCENE_FIT);
     const headerLine = HEADER_CENTRE_Y;
-    const wheelScale = Math.min(1, halfW / WHEEL_BOX.width, (stageH - headerLine - 16) / WHEEL_DRAWN_HEIGHT);
+    const ringTop = headerLine + HEADER_HEIGHT / 2 + WHEEL_GAP.wide;
+    const wheelScale = Math.min(1, halfW / WHEEL_BOX.width, (stageH - ringTop - 16) / WHEEL_DRAWN_HEIGHT);
     layout = {
       sceneTop: TITLE_TOP,
       toLeft: sceneColLeft + (halfW - toW) / 2,
@@ -98,6 +102,7 @@ const SceneStory = forwardRef(function SceneStory(
       wheelW: halfW,
       titleW: halfW,
       headerLine,
+      ringTop,
       wheelScale,
     };
   } else {
@@ -113,6 +118,7 @@ const SceneStory = forwardRef(function SceneStory(
     const toW = SCENE_BOX.width * toScale;
     const stackHeight = STACK_GAP + 48 + 24 + SCENE_BOX.height * toScale; // gap, title (2 lines), gap, art
     const headerLine = NAV_HEIGHT + stackHeight + 8 + HEADER_HEIGHT / 2;
+    const ringTop = headerLine + HEADER_HEIGHT / 2 + WHEEL_GAP.narrow;
     layout = {
       sceneTop: NAV_HEIGHT + STACK_GAP,
       toLeft: (stageW - toW) / 2,
@@ -121,11 +127,12 @@ const SceneStory = forwardRef(function SceneStory(
       wheelW,
       titleW: wheelW,
       headerLine,
-      wheelScale: Math.min(wheelMax, (stageH - headerLine - 16) / WHEEL_DRAWN_HEIGHT),
+      ringTop,
+      wheelScale: Math.min(wheelMax, (stageH - ringTop - 16) / WHEEL_DRAWN_HEIGHT),
     };
   }
   const wheelScale = Math.max(0.1, layout.wheelScale);
-  const wheelTop = layout.headerLine + RING_RADIUS * wheelScale - (WHEEL_BOX.height / 2 - 50) * wheelScale;
+  const wheelTop = layout.ringTop + RING_RADIUS * wheelScale - (WHEEL_BOX.height / 2 - 50) * wheelScale;
   const blockHeight = stageH + ENTER_PX + indicators.length * STEP_PX;
 
   // Scroll position (page y) at which each indicator is the current one.
@@ -331,11 +338,17 @@ const SceneStory = forwardRef(function SceneStory(
                 ...(SCROLL_TIMELINE ? {} : { opacity: 0, visibility: 'hidden' }),
               }}
             >
-              <div
-                className="absolute inset-x-0 z-10 flex items-start"
-                style={{ top: layout.headerLine - HEADER_HEIGHT / 2, minHeight: HEADER_HEIGHT }}
-              >
-                <WheelHelp maxWidth={Math.max(160, layout.wheelW - HEADER_HEIGHT - 16)} />
+              {/* The ?, the indicator's number and ↓ / ↑ (one indicator at a time, like scrolling). */}
+              <div className="absolute inset-x-0 z-10" style={{ top: layout.headerLine - HEADER_HEIGHT / 2 }}>
+                <WheelHeader
+                  number={current}
+                  total={indicatorsByNumber.size}
+                  width={layout.wheelW}
+                  onPrev={() => onStep(current, -1, { focus: false })}
+                  onNext={() => onStep(current, 1, { focus: false })}
+                  hasPrev={canStep(current, -1)}
+                  hasNext={canStep(current, 1)}
+                />
               </div>
               <div
                 className="relative mx-auto"
