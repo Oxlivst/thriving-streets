@@ -10,10 +10,18 @@
       .rise-pending [data-rise]:not(.rise-in) {
         opacity: 0;
       }
+      /* JavaScript notice (top of the body): hidden while JavaScript runs, unless the
+         site's own scripts haven't started within 5s (blocked or failed to load). */
+      .js:not(.js-failed) .js-notice {
+        display: none;
+      }
     </style>
     <script>
-      document.documentElement.classList.add('rise-pending');
+      document.documentElement.classList.add('js', 'rise-pending');
       setTimeout(() => document.documentElement.classList.remove('rise-pending'), 3000);
+      setTimeout(() => {
+        if (!document.documentElement.classList.contains('js-ready')) document.documentElement.classList.add('js-failed');
+      }, 5000);
     </script>
     <title>Streets for Thriving Lives | Future Streets Oxfordshire</title>
     <meta
@@ -24,6 +32,15 @@
   </head>
 
   <body>
+    <!-- ===== SECTION: JavaScript notice =====
+         Shown when JavaScript is off, or when the site's scripts didn't load (see the
+         script in the head; src/base.js marks them as started). -->
+    <div class="js-notice" role="note">
+      <p>
+        Parts of this site, like the interactive scenes, the wheels and the page contents, need JavaScript. Turn on JavaScript
+        in your browser, or open this page in another browser, to see everything.
+      </p>
+    </div>
     <!-- ===== SECTION: Top navigation ===== -->
     <header class="site-header">
       <nav class="site-nav" aria-label="Main">
