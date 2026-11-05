@@ -1,15 +1,19 @@
 // Entry point for the About page: shared setup, then the side nav, built from the
-// page's sections (each section's id and question).
+// overview and the page's sections (each section's id and question).
 import './base.js';
 
 import { createRoot } from 'react-dom/client';
 import SectionNav from './components/SectionNav.jsx';
 
 const sections = [...document.querySelectorAll('.about-section')];
-const items = sections.map((section) => ({
-  id: section.id,
-  label: section.querySelector('.about-section__title').textContent.trim(),
-}));
+const overview = document.getElementById('overview');
+const items = [
+  ...(overview ? [{ id: overview.id, label: overview.querySelector('.about-overview__title').textContent.trim() }] : []),
+  ...sections.map((section) => ({
+    id: section.id,
+    label: section.querySelector('.about-section__title').textContent.trim(),
+  })),
+];
 
 const navRoot = document.getElementById('side-nav');
 if (navRoot) createRoot(navRoot).render(<SectionNav items={items} />);
