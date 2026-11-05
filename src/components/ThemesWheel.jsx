@@ -229,12 +229,14 @@ export default function ThemesWheel() {
 
   return (
     <div ref={trackRef} className="themes-wheel-track" style={{ '--swap': `${SWAP_PX}px` }}>
-      <div
-        ref={wheelRef}
-        className="themes-wheel"
-        role="img"
-        aria-label="The six themes on a wheel, each with a collage from the workshops. Scrolling on, equity and safety appear as a ring around all six themes, and each theme's factors fan out around it: they are listed, theme by theme, further down the page."
-      >
+      <div ref={wheelRef} className="themes-wheel">
+        {/* The wheel's description for screen readers. It sits beside the drawing, not on it,
+            because the drawing holds the factor links (pointer shortcuts, hidden from them). */}
+        <span
+          className="sr-only"
+          role="img"
+          aria-label="The six themes on a wheel, each with a collage from the workshops. Scrolling on, equity and safety appear as a ring around all six themes, and each theme's factors fan out around it: they are listed, theme by theme, further down the page."
+        />
         <img
           className="themes-wheel__part"
           src={`${BASE}themes-wheel-ring.svg`}

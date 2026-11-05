@@ -81,21 +81,28 @@ export function ThemeSections() {
                   ))}
                 </div>
                 {indicatorsByFactor.has(factor.key) && (
-                  <ul className="factor__indicators" aria-label={`Indicators drawing on ${factor.name.toLowerCase()}`}>
-                    {indicatorsByFactor.get(factor.key).map((indicator) => (
-                      <li key={indicator.number} className="contents">
-                        <button
-                          type="button"
-                          className="factor__indicator"
-                          aria-label={indicator.text}
-                          aria-haspopup="dialog"
-                          onClick={() => setOpen({ indicator, theme: theme.key })}
-                        >
-                          <img src={indicator.thumbnail} alt="" loading="lazy" decoding="async" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    {/* Read out before the drawings, so screen readers know what they are. */}
+                    <p id={`${factor.key}-indicators`} className="sr-only">
+                      Indicators drawing on {factor.name.toLowerCase()}:
+                    </p>
+                    <ul className="factor__indicators" aria-labelledby={`${factor.key}-indicators`}>
+                      {indicatorsByFactor.get(factor.key).map((indicator) => (
+                        // role: display: contents drops the list item from some screen readers.
+                        <li key={indicator.number} className="contents" role="listitem">
+                          <button
+                            type="button"
+                            className="factor__indicator"
+                            aria-label={`${indicator.text}. Opens its themes and factors.`}
+                            aria-haspopup="dialog"
+                            onClick={() => setOpen({ indicator, theme: theme.key })}
+                          >
+                            <img src={indicator.thumbnail} alt="" loading="lazy" decoding="async" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
                 )}
               </article>
             ))}
