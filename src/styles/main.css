@@ -460,10 +460,33 @@
     }
   }
 
-  /* Phones: only the ? (scrolling or tapping the scene moves between indicators). */
+  /* Phones: only the ? (scrolling or tapping the scene moves between indicators), a size
+     smaller: a 40px circle with a 14px ?, beside the top of the wheel. */
   @media (max-width: 699.98px) {
     .wheel-header__bar {
       @apply hidden;
+    }
+
+    .wheel-header__help {
+      @apply size-10;
+    }
+
+    .wheel-header .focus-help {
+      @apply min-h-10 rounded-[20px];
+    }
+
+    .wheel-header .focus-help__toggle {
+      @apply size-10;
+    }
+
+    /* ! beats the icon's own size-6 (a utility, a later layer). */
+    .wheel-header .focus-help__toggle svg {
+      @apply size-[18px]!;
+    }
+
+    /* 10px top padding: the first line's centre level with the smaller ? (20px down). */
+    .wheel-header .focus-help__inner {
+      @apply py-2.5;
     }
   }
 

@@ -31,6 +31,8 @@ const NAV_HEIGHT = 60;
 const HEADER_CENTRE_Y = 125;
 const HEADER_HEIGHT = 48;
 const WHEEL_GAP = { wide: 40, narrow: 20 };
+// Phones show only the ? in that row (no indicator bar), so the wheel moves up level with it.
+const PHONE_MAX = 700;
 const TITLE_TOP = HEADER_CENTRE_Y - 13.5; // scene title (27px line) centred on the row
 
 // Scroll lengths match the focus view on main (480px per indicator).
@@ -47,7 +49,8 @@ const WHEEL_DRAWN_HEIGHT = 640; // ring top to the bottom of a third factor band
 const STACK_GAP = 20; // narrow screens: space between the nav and the scene's title
 // Narrow screens: the drawing and the wheel share the height left after the fixed parts
 // (nav, gap, two-line title, gaps, the header row, the gap under it, bottom margin), about 42 : 58.
-const STACK_FIXED = NAV_HEIGHT + STACK_GAP + 48 + 24 + 8 + HEADER_HEIGHT + WHEEL_GAP.narrow + 16;
+// On phones the wheel starts level with the ?, so the row and the gap under it take no height.
+const stackFixed = (phone) => NAV_HEIGHT + STACK_GAP + 48 + 24 + 8 + (phone ? 0 : HEADER_HEIGHT + WHEEL_GAP.narrow) + 16;
 const STACK_ART_SHARE = 0.42;
 const SETTLE_DEG = 14; // a new wheel eases this far into place (a hint that it turns)
 const FADE_MS = 600; // wheel crossfade
@@ -111,14 +114,15 @@ const SceneStory = forwardRef(function SceneStory(
     const artMax = Math.min(1, (stageW - 32) / SCENE_BOX.width);
     const wheelMax = Math.min(1, wheelW / WHEEL_BOX.width);
     // Fill the height: split it, then give whatever one can't use (it hit its width) to the other.
-    const room = Math.max(0, stageH - STACK_FIXED);
+    const phone = stageW < PHONE_MAX;
+    const room = Math.max(0, stageH - stackFixed(phone));
     let toScale = Math.min(artMax, (room * STACK_ART_SHARE) / SCENE_BOX.height);
     const fitWheel = Math.min(wheelMax, (room - SCENE_BOX.height * toScale) / WHEEL_DRAWN_HEIGHT);
     toScale = Math.max(0.25, Math.min(artMax, (room - WHEEL_DRAWN_HEIGHT * fitWheel) / SCENE_BOX.height));
     const toW = SCENE_BOX.width * toScale;
     const stackHeight = STACK_GAP + 48 + 24 + SCENE_BOX.height * toScale; // gap, title (2 lines), gap, art
     const headerLine = NAV_HEIGHT + stackHeight + 8 + HEADER_HEIGHT / 2;
-    const ringTop = headerLine + HEADER_HEIGHT / 2 + WHEEL_GAP.narrow;
+    const ringTop = phone ? headerLine - HEADER_HEIGHT / 2 : headerLine + HEADER_HEIGHT / 2 + WHEEL_GAP.narrow;
     layout = {
       sceneTop: NAV_HEIGHT + STACK_GAP,
       toLeft: (stageW - toW) / 2,
