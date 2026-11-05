@@ -791,8 +791,10 @@
   /* Figma: Wireframe - 51 (file BWfZznPABe6QYhxxBGhOdp, node 6917:5927). */
   /* Spacing as in Figma (100px above the title, 87px below it) on large windows,
      tightening a little on smaller ones. */
+  /* overflow-x-clip: on touch screens the collages drift outward as the page scrolls and can
+     pass the screen's edge; clip (not hidden) so the wheel still sticks. */
   .themes-hero {
-    @apply mx-auto flex flex-col items-center px-6;
+    @apply mx-auto flex flex-col items-center overflow-x-clip px-6;
     padding-top: clamp(4.5rem, 7vw, 6.25rem);
   }
 
