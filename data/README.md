@@ -29,7 +29,7 @@ Exported from the Google Sheet *FSO_Indicator Mapping and Assessments*, tab *Ind
 | 4 (`0.`) | A description of each factor, drawn from the workshops |
 | 5 onwards (`1.`–`20.`) | One indicator per row: number in column A, indicator text in column B, then one cell per factor |
 
-The number in column A also names the indicator's illustration (`1.` → `public/illustrations/indicators/indicator-01.svg`). If you reorder indicators in the sheet, rename the illustration files to match.
+The number in column A also names the indicator's illustration (`1.` → `art/indicators/indicator-01.png`). If you reorder indicators in the sheet, rename the illustration files to match.
 
 Each factor cell is empty, or holds a tick (`✓`), optionally followed by bullet-point quotes (`•`).
 Every ticked factor is shown on the indicator's wheel. There is no strong / weak distinction:
