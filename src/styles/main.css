@@ -494,6 +494,106 @@
     }
   }
 
+  /* ===== Scene story (SceneStory): the homepage's one long scroll ========== */
+  /* Gentle snapping: only near a stop, so the rest of the page scrolls freely. Each stop
+     can't be scrolled past in one swipe (snap-stop: always). */
+  html:has(.scene-story) {
+    scroll-snap-type: y proximity;
+  }
+
+  /* While a scene holds its stage, always settle on a stop, as the focus view on main
+     does (SceneStory toggles the class). */
+  html.story-snap-on {
+    scroll-snap-type: y mandatory;
+  }
+
+  .story-snap {
+    @apply pointer-events-none absolute left-0 h-px w-px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  /* Touch: still settles on a stop, but a swipe may carry past several, as on main
+     (forcing a stop at each one fights touch momentum and feels sticky). */
+  @media (pointer: coarse) {
+    .story-snap {
+      scroll-snap-stop: normal;
+    }
+  }
+
+  /* The move aside, run by the browser on the block's scroll timeline (off the main
+     thread): over the first --story-enter of the hold, the scene slides and shrinks to
+     its place and the wheel eases in. Scrolling back runs it in reverse. Browsers
+     without scroll timelines get the same from SceneStory's scroll handler. */
+  @supports (animation-timeline: --story) {
+    .scene-story {
+      view-timeline: --story block;
+    }
+
+    .story-scene,
+    .story-wheel {
+      animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+      animation-fill-mode: both;
+      animation-duration: auto;
+      animation-timeline: --story;
+      animation-range: contain 0px contain var(--story-enter);
+    }
+
+    .story-scene {
+      animation-name: story-scene-aside;
+    }
+
+    .story-wheel {
+      animation-name: story-wheel-in;
+    }
+
+    .story-scene .scene-title {
+      animation: story-title-size linear both;
+      animation-duration: auto;
+      animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+      animation-timeline: --story;
+      animation-range: contain 0px contain var(--story-enter);
+    }
+  }
+
+  /* The scene title in the scroll story: counter-scaled while the scene shrinks (see
+     SceneStory), from its bottom centre so the gap to the drawing stays the same, and
+     no wider than its column once aside. */
+  .story-scene .scene-title {
+    transform-origin: 50% 100%;
+    max-width: min(calc(100vw - 2rem), var(--story-title-max, 100vw));
+  }
+
+  @keyframes story-title-size {
+    to {
+      scale: var(--story-title-scale, 1);
+    }
+  }
+
+  @keyframes story-scene-aside {
+    to {
+      transform: translateX(var(--story-dx)) scale(var(--story-scale));
+    }
+  }
+
+  @keyframes story-wheel-in {
+    from {
+      opacity: 0;
+      translate: var(--story-from);
+      visibility: hidden;
+    }
+
+    1% {
+      visibility: visible;
+    }
+
+    to {
+      opacity: 1;
+      translate: 0 0;
+      visibility: visible;
+    }
+  }
+
   /* ===== Indicator wheel ================================================= */
   /* Changing indicator: a crossfade with a little motion. Moving on, the new wheel
      rises in and settles from slightly smaller; the old one drifts up as it fades.

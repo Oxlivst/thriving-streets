@@ -174,8 +174,10 @@ function Scene({
     const label = event.target.closest?.('.hover-label[data-visible="true"]');
     if (label) return Number(label.dataset.indicator); // pointer resting on a visible label
     const rect = boxRef.current.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / scale;
-    const y = (event.clientY - rect.top) / scale;
+    // From the drawn size, so it stays right when a parent scales the scene too (SceneStory).
+    const k = rect.width / SCENE_BOX.width;
+    const x = (event.clientX - rect.left) / k;
+    const y = (event.clientY - rect.top) / k;
     const priority = [...scene.slots]
       .reverse()
       .find((s) => s.priorityArea && inPolygon(x, y - offsetOf(s.indicator), s.priorityArea));
