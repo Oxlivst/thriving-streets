@@ -99,4 +99,17 @@ export const scenes = [
       { indicator: 16, depth: 0.8, x: 301.97, y: 325.63, width: 321.13, height: 271.55, halo: { x: 313, y: 312, size: 299 } },
     ],
   },
+  {
+    // Figma: Scene 4 (file BWfZznPABe6QYhxxBGhOdp, node 6975:6099), drawn 520px wide there:
+    // positions are scaled up by 640 / 520 to the scene box. Halos not designed yet: centred
+    // estimates, as for scene 2.
+    id: 'scene-4',
+    title: 'The changes you notice structurally, across towns:',
+    slots: [
+      { indicator: 18, depth: -0.4, x: 252.08, y: 0, width: 378.94, height: 267.58, halo: { x: 295, y: -13, size: 294 } },
+      { indicator: 17, depth: 0.4, x: 0, y: 12.24, width: 416.47, height: 308.37, halo: { x: 39, y: -3, size: 339 } },
+      { indicator: 20, depth: 0.7, x: 361.4, y: 267.58, width: 278.6, height: 384.24, halo: { x: 348, y: 307, size: 306 } },
+      { indicator: 19, depth: -0.5, x: 104.42, y: 267.58, width: 348.35, height: 318.98, halo: { x: 103, y: 252, size: 351 } },
+    ],
+  },
 ];
