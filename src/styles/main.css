@@ -45,6 +45,14 @@
     outline-offset: 3px;
   }
 
+  /* Phones (below 700px): body copy is 16/24 instead of 18/27, everywhere it's used. */
+  @media (max-width: 699.98px) {
+    :root {
+      --text-body: 1rem;
+      --text-body--line-height: 1.5rem;
+    }
+  }
+
   /* Entrance: ease into place from a slight offset (hero.js adds the class). */
   .rise-in {
     animation: rise-in var(--duration-entrance) var(--ease-smooth) var(--rise-delay, 0ms) both;
@@ -146,15 +154,20 @@
     @apply mx-auto w-column max-w-full pt-[102px];
   }
 
-  /* The callouts, dotted line, scroll cue and prompt, placed as in Figma (640 × 430), with the
-     dotted line scaled to 85% (from its top) and the cue and prompt moved up with its end. */
+  /* The callouts, dotted line, intro and scroll cue, placed as in Figma (640 wide), with the
+     dotted line scaled to 85% (from its top) and the intro starting at its end. */
   .hero-callouts {
-    @apply relative mt-8 h-[370px];
+    @apply relative mt-8 h-[400px];
   }
 
   /* Placed from the centre (282px in the 640px column), so the line ends at the cue on any width. */
   .hero-line {
     @apply absolute top-[-25px] left-[calc(50%-33.8px)] h-[284px] w-[71.9px];
+  }
+
+  /* Wider screens: no box of its own, so the callout layers are placed in .hero-callouts. */
+  .hero-callout-stack {
+    display: contents;
   }
 
   .hero-callout-layer {
@@ -177,21 +190,17 @@
     @apply relative flex h-[62px] items-center justify-center rounded-[11px] bg-bg-alt px-6 py-4 text-body font-bold whitespace-nowrap text-text;
   }
 
+  /* The intro (body copy) where the dotted line ends, with the scroll cue under it. */
+  .hero-outro {
+    @apply absolute top-[268px] left-1/2 flex w-[540px] max-w-full -translate-x-1/2 flex-col items-center gap-3;
+  }
+
+  .hero-intro {
+    @apply text-center text-body text-pretty text-text;
+  }
+
   .hero-cue {
-    @apply absolute top-[265px] left-[calc(50%+0.5px)] h-[22px] w-[39px] -translate-x-1/2;
-  }
-
-  .hero-prompt {
-    @apply absolute top-[297px] left-1/2 w-[480px] -translate-x-1/2 text-center text-body font-bold text-text;
-  }
-
-  /* Fades on an inner span, since the <p> carries the load entrance animation (data-rise). */
-  .hero-prompt__text {
-    transition: opacity var(--duration-fade) cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .hero-prompt[data-hidden='true'] .hero-prompt__text {
-    @apply opacity-0;
+    @apply h-[22px] w-[39px];
   }
 
   /* Phones (below 700px): the hero fills the screen width. The title and subtitle shrink,
@@ -209,10 +218,15 @@
       @apply text-h3;
     }
 
-    /* Same height as the design's block, so the dotted line, cue and prompt keep their
-       desktop places (from the centre) and the callouts stack above them. */
+    /* The dotted line keeps its desktop place (from the centre); the callouts stack over it
+       and the intro follows below. */
     .hero-callouts {
-      @apply mt-10 flex h-auto min-h-[370px] flex-col items-center gap-10 pt-4;
+      @apply mt-10 flex h-auto flex-col items-center pt-4;
+    }
+
+    /* Tall enough that the intro (40px below) starts just after the dotted line ends (259px). */
+    .hero-callout-stack {
+      @apply flex min-h-[214px] w-full flex-col items-center gap-10;
     }
 
     .hero-callout-layer,
@@ -220,15 +234,13 @@
       @apply relative inset-auto h-auto w-full;
     }
 
-    /* Full width with slim padding, and on the narrowest phones the text eases down a little
-       (never below 15px), so each callout fits on two lines. */
+    /* Full width with slim padding, and 14/21 text. */
     .callout {
-      @apply mx-auto h-auto w-full max-w-[22rem] px-4 py-3 text-center text-balance whitespace-normal;
-      font-size: clamp(0.9375rem, calc((100vw - 5rem) / 19), var(--text-body));
+      @apply mx-auto h-auto w-full max-w-[22rem] px-4 py-3 text-center text-[0.875rem] leading-[1.3125rem] text-balance whitespace-normal;
     }
 
-    .hero-prompt {
-      @apply relative top-auto left-auto mt-auto w-auto max-w-[20rem] translate-x-0;
+    .hero-outro {
+      @apply relative top-auto left-auto mt-10 w-auto max-w-[22rem] translate-x-0;
     }
   }
 

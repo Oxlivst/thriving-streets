@@ -67,26 +67,31 @@
         <div class="hero-callouts">
           <img class="hero-line" src="/images/hero-dotted-line.svg" alt="" data-rise />
 
-          <div class="hero-callout-layer" data-parallax="0.06" data-rise>
-            <div class="hero-callout-row hero-callout-row--first">
-              <p class="callout -rotate-2">What if our streets and neighbourhoods worked for everyone?</p>
+          <!-- Just a wrapper on wider screens; on phones it stacks the callouts and keeps the
+               intro below the dotted line's end. -->
+          <div class="hero-callout-stack">
+            <div class="hero-callout-layer" data-parallax="0.06" data-rise>
+              <div class="hero-callout-row hero-callout-row--first">
+                <p class="callout -rotate-2">What if our streets and neighbourhoods worked for everyone?</p>
+              </div>
+            </div>
+
+            <div class="hero-callout-layer" data-parallax="0.1" data-rise>
+              <div class="hero-callout-row hero-callout-row--second">
+                <p class="callout rotate-2">What would you notice differently if they did?</p>
+              </div>
             </div>
           </div>
 
-          <div class="hero-callout-layer" data-parallax="0.1" data-rise>
-            <div class="hero-callout-row hero-callout-row--second">
-              <p class="callout rotate-2">What would you notice differently if they did?</p>
-            </div>
+          <!-- Where the dotted line ends: the intro, then the scroll cue.
+               Figma: file GgTp2DtbW3z0L5GG4Leabb, node 1591:78618. -->
+          <div class="hero-outro" data-rise>
+            <p class="hero-intro">
+              We asked these questions to people across Oxfordshire, and from their words came a set of community-led indicators:
+              stories you would notice if our streets worked for everyone.
+            </p>
+            <img class="hero-cue" src="/images/hero-scroll-cue.svg" alt="" />
           </div>
-
-          <img class="hero-cue" src="/images/hero-scroll-cue.svg" alt="" data-rise />
-          <!-- Fades out once the first scene description shows (hero.js) -->
-          <p class="hero-prompt" data-rise>
-            <span class="hero-prompt__text"
-              >Scroll to journey the vision and click on parts to read the community-created indicators of thriving
-              streets</span
-            >
-          </p>
         </div>
       </section>
 
