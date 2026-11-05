@@ -395,12 +395,55 @@
   /* Help: a 48px circle (the ? icon), collapsed by default; expands rightwards into the hint pill.
      Top-aligned (here and in its row), so the ? and the × stay put while the pill grows downwards. */
   .focus-help {
-    @apply flex min-h-12 min-w-0 items-start rounded-[24px] bg-bg text-text;
+    @apply flex min-h-12 min-w-0 items-start rounded-[24px] bg-bg-alt text-text;
     transition: background-color 300ms var(--ease-smooth);
   }
 
   .focus-help__toggle {
-    @apply flex size-12 shrink-0 items-center justify-center rounded-full;
+    @apply flex size-12 shrink-0 items-center justify-center rounded-full bg-bg-tertiary;
+  }
+
+  /* ----- The row above the wheel (scroll homepage, WheelHeader.jsx) -----
+     The ?, a bar with the indicator's number and ↓, then ↑. 48px tall, 16px apart. */
+  .wheel-header {
+    @apply relative flex max-w-full items-center gap-4;
+  }
+
+  /* Holds the ?'s place; the help pill sits on top and spreads over the bar when open. */
+  .wheel-header__help {
+    @apply relative size-12 shrink-0;
+  }
+
+  .wheel-header__help > .focus-help {
+    @apply absolute top-0 left-0 z-10;
+  }
+
+  .wheel-header__bar {
+    @apply flex h-12 min-w-0 flex-1 items-center justify-between rounded-full bg-bg-alt pl-6;
+  }
+
+  .wheel-header__label {
+    @apply min-w-0 truncate text-body font-semibold text-text;
+  }
+
+  .wheel-header__button {
+    @apply flex size-12 shrink-0 items-center justify-center rounded-full bg-bg-tertiary text-text disabled:opacity-40;
+    transition:
+      background-color 300ms var(--ease-smooth),
+      opacity 300ms var(--ease-smooth);
+  }
+
+  @media (hover: hover) {
+    .wheel-header__button:not(:disabled):hover,
+    .focus-help__toggle:hover {
+      background-color: color-mix(in srgb, var(--color-bg-tertiary) 85%, var(--color-text) 8%);
+    }
+  }
+
+  @media (max-width: 699.98px) {
+    .wheel-header__bar {
+      @apply pl-4;
+    }
   }
 
   /* Hover only where there's a real pointer (a tap leaves :hover stuck on touch screens).

@@ -37,19 +37,30 @@ export default function VisionExplorer() {
   const stories = useRef(new Map()); // scene id → its SceneStory (to scroll to an indicator)
 
   // Each story says which of its indicators is current while it holds the stage (or null).
+  // The indicator a step is scrolling to: until it arrives, or for a moment at most (if the
+  // reader scrolls elsewhere instead).
+  const heading = useRef({ number: null, at: 0 });
   const onActive = useCallback((sceneId, number) => {
+    if (number === heading.current.number) heading.current.number = null;
     const mine = new Set(scenes.find((s) => s.id === sceneId).slots.map((slot) => slot.indicator));
     setSelected((current) => (number !== null ? number : mine.has(current) ? null : current));
     setHovered(null);
   }, []);
 
-  // The wheel's arrows, once every theme has been shown: scroll to the previous / next indicator.
+  // ↓ / ↑ above the wheel, and the wheel's arrows once every theme has been shown: scroll to
+  // the previous / next indicator.
   const canStep = useCallback((number, offset) => order[order.indexOf(number) + offset] !== undefined, [order]);
   const onStep = useCallback(
-    (number, offset) => {
-      const next = order[order.indexOf(number) + offset];
+    // focus: move keyboard focus to the new wheel (from the wheel's own keys and arrows, whose
+    // wheel goes away; not from the ↓ / ↑ above it, which stay).
+    // A press while the page is still scrolling to an earlier step carries on from there.
+    (number, offset, { focus = true } = {}) => {
+      const recent = performance.now() - heading.current.at < 1500;
+      const from = recent && heading.current.number !== null ? heading.current.number : number;
+      const next = order[order.indexOf(from) + offset];
       if (next === undefined) return;
-      for (const story of stories.current.values()) if (story?.indicators.includes(next)) story.scrollTo(next, { focus: true });
+      heading.current = { number: next, at: performance.now() };
+      for (const story of stories.current.values()) if (story?.indicators.includes(next)) story.scrollTo(next, { focus });
     },
     [order],
   );
