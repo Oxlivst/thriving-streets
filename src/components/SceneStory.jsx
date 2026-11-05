@@ -79,6 +79,7 @@ const SceneStory = forwardRef(function SceneStory(
       toW,
       wheelLeft: sceneColLeft + halfW + GRID_GUTTER,
       wheelW: halfW,
+      titleW: halfW,
       headerLine,
       wheelScale,
     };
@@ -97,6 +98,7 @@ const SceneStory = forwardRef(function SceneStory(
       toW,
       wheelLeft: (stageW - wheelW) / 2,
       wheelW,
+      titleW: wheelW,
       headerLine,
       wheelScale: Math.min(1, wheelW / WHEEL_BOX.width, (stageH - headerLine - 16) / WHEEL_DRAWN_HEIGHT),
     };
@@ -144,6 +146,9 @@ const SceneStory = forwardRef(function SceneStory(
         wheelEl.current.style.opacity = t.toFixed(3);
         wheelEl.current.style.translate = g.narrow ? `0 ${((1 - t) * 32).toFixed(1)}px` : `${((1 - t) * 48).toFixed(1)}px 0`;
         wheelEl.current.style.visibility = t > 0.01 ? 'visible' : 'hidden';
+        const title = sceneEl.current.querySelector('.scene-title');
+        const c = Number(sceneEl.current.style.getPropertyValue('--story-title-scale')) || 1;
+        if (title) title.style.scale = String(1 + t * (c - 1));
       }
     }
     // The current indicator: the last one whose step is (more than) half reached.
@@ -160,9 +165,23 @@ const SceneStory = forwardRef(function SceneStory(
     }
   }, [indicators, scene.id]);
   // Measure the block's place on the page now, and whenever the page's layout changes.
+  // Also size the scene title: the whole scene shrinks as it moves aside, so the title
+  // is counter-scaled to end at the size the focus view on main gives it (18px easing to
+  // 16px with the scene's width), no wider than the column it ends up in.
   useLayoutEffect(() => {
     const measure = () => {
       blockTop.current = block.current.getBoundingClientRect().top + window.scrollY;
+      const art = sceneEl.current;
+      const title = art?.querySelector('.scene-title');
+      const g = geometry.current;
+      if (title && g.stageH) {
+        const shrink = g.layout.toW / g.fromW; // the scene's scale once aside
+        const startFont = parseFloat(getComputedStyle(title).fontSize);
+        const endFont = clamp(0.036 * g.layout.toW, 16, startFont);
+        const counter = endFont / (startFont * shrink);
+        art.style.setProperty('--story-title-scale', counter.toFixed(4));
+        art.style.setProperty('--story-title-max', `${(g.layout.titleW / (shrink * counter)).toFixed(1)}px`);
+      }
       last.current.t = -1; // repaint the fallback
       update();
     };

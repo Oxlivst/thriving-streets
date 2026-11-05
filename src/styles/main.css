@@ -509,7 +509,28 @@
 
     .story-wheel {
       animation-name: story-wheel-in;
-      will-change: opacity, translate;
+    }
+
+    .story-scene .scene-title {
+      animation: story-title-size linear both;
+      animation-duration: auto;
+      animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+      animation-timeline: --story;
+      animation-range: contain 0px contain var(--story-enter);
+    }
+  }
+
+  /* The scene title in the scroll story: counter-scaled while the scene shrinks (see
+     SceneStory), from its bottom centre so the gap to the drawing stays the same, and
+     no wider than its column once aside. */
+  .story-scene .scene-title {
+    transform-origin: 50% 100%;
+    max-width: min(calc(100vw - 2rem), var(--story-title-max, 100vw));
+  }
+
+  @keyframes story-title-size {
+    to {
+      scale: var(--story-title-scale, 1);
     }
   }
 
