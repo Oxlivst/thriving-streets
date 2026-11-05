@@ -26,8 +26,16 @@ import WheelHeader from './WheelHeader.jsx';
 import useWidth from '../hooks/useWidth.js';
 import useNarrow from '../hooks/useNarrow.js';
 
-// Jumps to an indicator glide, unless the visitor asked their device for less motion.
-const scrollBehaviour = () => (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
+// Going to an indicator glides there when it's the next or previous one (so a handover
+// between scenes plays). Further away, or if the visitor asked their device for less motion,
+// it jumps straight there: while the stage is held the scroll only picks the indicator, so a
+// glide would flick through every one in between. ('instant', not 'auto': auto follows the
+// page's CSS, which glides for mouse users.)
+const scrollToStep = (top) => {
+  const far = Math.abs(top - window.scrollY) > STEP_PX * 1.5;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top, behavior: far || reduce ? 'instant' : 'smooth' });
+};
 
 // Vertical layout, in px from the top of the window (the nav is 60px tall): the scene
 // title and the row above the wheel (?, indicator bar, ↓ / ↑) sit on HEADER_CENTRE_Y,
@@ -173,7 +181,7 @@ const SceneStory = forwardRef(function SceneStory(
       indicators,
       scrollTo: (n, { focus = false } = {}) => {
         if (focus) pendingFocus.current = n;
-        window.scrollTo({ top: stepAt(n), behavior: scrollBehaviour() });
+        scrollToStep(stepAt(n));
       },
     }),
     [indicators, stepAt],
@@ -315,7 +323,7 @@ const SceneStory = forwardRef(function SceneStory(
   // Screen readers: say which indicator is showing when it changes (from scrolling too).
   const announcement = active !== null ? `Showing: ${indicatorsByNumber.get(active).text}` : '';
 
-  const select = useCallback((n) => window.scrollTo({ top: stepAt(n), behavior: scrollBehaviour() }), [stepAt]);
+  const select = useCallback((n) => scrollToStep(stepAt(n)), [stepAt]);
 
   return (
     <div
