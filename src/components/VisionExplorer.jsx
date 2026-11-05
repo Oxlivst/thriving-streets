@@ -49,7 +49,7 @@ export default function VisionExplorer() {
     (number, offset) => {
       const next = order[order.indexOf(number) + offset];
       if (next === undefined) return;
-      for (const story of stories.current.values()) if (story?.indicators.includes(next)) story.scrollTo(next);
+      for (const story of stories.current.values()) if (story?.indicators.includes(next)) story.scrollTo(next, { focus: true });
     },
     [order],
   );

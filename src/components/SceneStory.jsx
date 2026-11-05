@@ -20,6 +20,9 @@ import WheelHelp from './WheelHelp.jsx';
 import useWidth from '../hooks/useWidth.js';
 import useNarrow from '../hooks/useNarrow.js';
 
+// Jumps to an indicator glide, unless the visitor asked their device for less motion.
+const scrollBehaviour = () => (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
+
 // Vertical layout, in px from the top of the window (the nav is 60px tall): the scene
 // title and the ? sit on HEADER_CENTRE_Y, and the wheel's ring starts on that line.
 const NAV_HEIGHT = 60;
@@ -134,15 +137,26 @@ const SceneStory = forwardRef(function SceneStory(
     },
     [indicators],
   );
-  useImperativeHandle(ref, () => ({ indicators, scrollTo: (n) => window.scrollTo({ top: stepAt(n), behavior: 'smooth' }) }), [
-    indicators,
-    stepAt,
-  ]);
+  // scrollTo(n, { focus }): focus: move keyboard focus to n's wheel once it's showing (the
+  // wheel's previous / next keys and arrows, whose own wheel goes away).
+  const pendingFocus = useRef(null);
+  useImperativeHandle(
+    ref,
+    () => ({
+      indicators,
+      scrollTo: (n, { focus = false } = {}) => {
+        if (focus) pendingFocus.current = n;
+        window.scrollTo({ top: stepAt(n), behavior: scrollBehaviour() });
+      },
+    }),
+    [indicators, stepAt],
+  );
 
   // ----- Scroll drives the stage. Per frame this only reads window.scrollY (the block's
   // place on the page is measured when the layout changes, not on every scroll), and
   // React only hears about it when the current indicator changes.
   const [current, setCurrent] = useState(indicators[0]);
+  const [active, setActive] = useState(null); // the current indicator while its wheel shows
   const geometry = useRef(null);
   geometry.current = { layout, fromW, fromLeft, blockHeight, stageH, narrow };
   const blockTop = useRef(0); // the block's top, in page coordinates
@@ -179,6 +193,7 @@ const SceneStory = forwardRef(function SceneStory(
     const active = y >= ENTER_PX * 0.6 && y <= g.blockHeight - g.stageH ? indicators[i] : null;
     if (active !== last.current.active) {
       last.current.active = active;
+      setActive(active);
       onActiveRef.current(scene.id, active);
     }
     // Firm snapping from where the stage starts to hold until it lets go (its last stop).
@@ -241,7 +256,25 @@ const SceneStory = forwardRef(function SceneStory(
     return () => clearTimeout(t);
   }, [current]);
 
-  const select = useCallback((n) => window.scrollTo({ top: stepAt(n), behavior: 'smooth' }), [stepAt]);
+  // Keyboard focus follows the wheel: when the indicator changes while focus is in the
+  // outgoing wheel (it's about to go), or a jump asked for it, focus moves to the new wheel.
+  // Screen readers then read its name ("…, indicator wheel").
+  useEffect(() => {
+    const stage = wheelEl.current;
+    const group = stage?.querySelector('.wheel-in [aria-roledescription]');
+    if (!group || active === null) return;
+    const leaving = stage.querySelector('.wheel-out')?.contains(document.activeElement);
+    const asked = pendingFocus.current !== null && pendingFocus.current === active;
+    if (leaving || asked) {
+      pendingFocus.current = null;
+      group.focus({ preventScroll: true });
+    }
+  }, [wheels, active]);
+
+  // Screen readers: say which indicator is showing when it changes (from scrolling too).
+  const announcement = active !== null ? `Showing: ${indicatorsByNumber.get(active).text}` : '';
+
+  const select = useCallback((n) => window.scrollTo({ top: stepAt(n), behavior: scrollBehaviour() }), [stepAt]);
 
   return (
     <div
@@ -257,6 +290,9 @@ const SceneStory = forwardRef(function SceneStory(
       ))}
       {/* The stage is as tall as the screen with the browser's toolbars hidden (lvh), as they
           usually are while scrolling down; when they show, they cover its bottom edge. */}
+      <p className="sr-only" aria-live="polite">
+        {announcement}
+      </p>
       <div ref={measureStage} className="scene-story__stage sticky top-0 h-lvh">
         {stageW > 0 && (
           <>
