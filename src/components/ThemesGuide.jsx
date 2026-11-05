@@ -28,7 +28,7 @@ const indicators = data.indicators.map((i) => ({
   ...i,
   illustration: withBase(i.illustration),
   illustrationFaded: withBase(i.illustrationFaded),
-  thumbnail: withBase(i.illustrationWebp),
+  thumbnail: withBase(i.illustration),
 }));
 // Factor key → the indicators that map to it, in number order. Only indicators that are
 // drawn yet (the ones placed in a homepage scene) are shown.

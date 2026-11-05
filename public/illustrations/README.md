@@ -25,13 +25,17 @@ Examples: `vision-hero-street-desktop.svg`, `vision-hero-street-mobile.svg`, `th
 
 ## Indicator illustrations
 
-Each of the 20 indicators in `data/indicator-mapping.csv` has one illustration, in `indicators/`. Name each file after the indicator's number (column A of the CSV), with two digits:
+Each of the 20 indicators in `data/indicator-mapping.csv` has one illustration. They're exported as **PNG** and go in `art/indicators/` at the project's root (not here). Name each file after the indicator's number (column A of the CSV), with two digits:
 
-`indicators/indicator-01.svg` … `indicators/indicator-20.svg`
+`art/indicators/indicator-01.png` … `art/indicators/indicator-20.png`
 
-Each illustration also needs a **faded version**, shown while another illustration is hovered or selected: `indicator-01-faded.svg`. The site swaps the files rather than lowering opacity, so export the faded artwork as designed.
+Each illustration also needs a **faded version**, shown while another illustration is hovered or selected: `indicator-01-faded.png`. The site swaps the files rather than lowering opacity, so export the faded artwork as designed.
 
-Add `-mobile` for a mobile version, e.g. `indicator-01-mobile.svg`. The site finds each illustration from its number, so if indicators are renumbered in the sheet, rename the files to match.
+Export settings (Figma):
+- **2x** (or more), with a **transparent background**: hover follows the drawn outline, using the transparency.
+- The **whole component frame**, not trimmed to the drawing: the scene places each file in its frame's slot (`src/config/scenes.js`), so a trimmed export is stretched out of place. The faded and colour versions use the same frame.
+
+The build turns each PNG into a WebP in `indicators/` here, at twice the size it's shown in the scene (`scripts/illustrations-to-webp.mjs`), and every screen size uses those. Don't edit or commit the WebPs. The site finds each illustration from its number, so if indicators are renumbered in the sheet, rename the files to match.
 
 ## Interactive layers
 

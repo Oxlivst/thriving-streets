@@ -16,10 +16,6 @@ import { scrollEffectsOff } from '../scripts/motion.js';
 const ALPHA_THRESHOLD = 24;
 const SWITCH_DELAY_MS = 120; // moving from one illustration to another
 const LEAVE_DELAY_MS = 180; // moving off all illustrations
-// Where the illustrations are shown as WebP copies instead of SVGs: phones, tablets and touch
-// screens, which would otherwise redraw the detailed vectors while scrolling and fading
-// (scripts/illustrations-to-webp.mjs makes them). Matches scrollEffectsOff() in motion.js.
-const RASTER_MEDIA = '(pointer: coarse), (max-width: 959.98px)';
 const SELECTED_HALO_OPACITY = 0.5; // halo behind the selected illustration in the focus view (0 = off)
 const HALO_SIZE = 0.75; // halo size relative to the positions in scenes.js (1 = as designed)
 const TITLE_SHOW_AT = 0.67; // share of the illustrations on screen before the scene description appears
@@ -311,23 +307,17 @@ function Scene({
                 }}
               >
                 {/* The faded artwork always sits underneath; the full-colour version fades in on top.
-                    Phones and touch screens get WebP copies (see RASTER_MEDIA). */}
-                <picture>
-                  <source media={RASTER_MEDIA} srcSet={indicator.illustrationFadedWebp} type="image/webp" />
-                  <img src={indicator.illustrationFaded} alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" />
-                </picture>
-                <picture>
-                  <source media={RASTER_MEDIA} srcSet={indicator.illustrationWebp} type="image/webp" />
-                  <img
-                    className="scene-slot__colour"
-                    src={indicator.illustration}
-                    alt=""
-                    loading={eager ? 'eager' : 'lazy'}
-                    decoding="async"
-                    style={{ opacity: inColour ? 1 : 0 }}
-                    onLoad={(e) => buildHitMap(slot, e.currentTarget)}
-                  />
-                </picture>
+                    Both are WebP, made from the PNG artwork (scripts/illustrations-to-webp.mjs). */}
+                <img src={indicator.illustrationFaded} alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" />
+                <img
+                  className="scene-slot__colour"
+                  src={indicator.illustration}
+                  alt=""
+                  loading={eager ? 'eager' : 'lazy'}
+                  decoding="async"
+                  style={{ opacity: inColour ? 1 : 0 }}
+                  onLoad={(e) => buildHitMap(slot, e.currentTarget)}
+                />
               </button>
             );
           })}
