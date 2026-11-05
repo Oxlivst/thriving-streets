@@ -37,7 +37,11 @@ const GRID_PAD = 32;
 const SCENE_FIT = 0.8; // beside the wheel, the scene is 80% of its half
 const WHEEL_BOX = { width: 600, height: 700 }; // IndicatorWheel's own coordinate box (centre at 300, 300)
 const WHEEL_DRAWN_HEIGHT = 640; // ring top to the bottom of a third factor band, at scale 1
-const STACK_GAP = 32; // narrow screens: space between the nav and the scene's title
+const STACK_GAP = 20; // narrow screens: space between the nav and the scene's title
+// Narrow screens: the drawing and the wheel share the height left after the fixed parts
+// (nav, gap, two-line title, gaps, the ? row's top half, bottom margin), about 42 : 58.
+const STACK_FIXED = NAV_HEIGHT + STACK_GAP + 48 + 24 + 8 + HEADER_HEIGHT / 2 + 16;
+const STACK_ART_SHARE = 0.42;
 const SETTLE_DEG = 14; // a new wheel eases this far into place (a hint that it turns)
 const FADE_MS = 600; // wheel crossfade
 
@@ -84,11 +88,15 @@ const SceneStory = forwardRef(function SceneStory(
       wheelScale,
     };
   } else {
-    const wheelW = Math.min(WHEEL_BOX.width, stageW - 2 * GRID_PAD);
-    const toScale = Math.min(
-      wheelW / SCENE_BOX.width,
-      Math.max(0.25, ((stageH - NAV_HEIGHT) * 0.46 - 72 - STACK_GAP) / SCENE_BOX.height),
-    );
+    // The wheel's box already has room around the ring, so it can run almost edge to edge.
+    const wheelW = Math.min(WHEEL_BOX.width, stageW - 16);
+    const artMax = Math.min(1, (stageW - 32) / SCENE_BOX.width);
+    const wheelMax = Math.min(1, wheelW / WHEEL_BOX.width);
+    // Fill the height: split it, then give whatever one can't use (it hit its width) to the other.
+    const room = Math.max(0, stageH - STACK_FIXED);
+    let toScale = Math.min(artMax, (room * STACK_ART_SHARE) / SCENE_BOX.height);
+    const fitWheel = Math.min(wheelMax, (room - SCENE_BOX.height * toScale) / WHEEL_DRAWN_HEIGHT);
+    toScale = Math.max(0.25, Math.min(artMax, (room - WHEEL_DRAWN_HEIGHT * fitWheel) / SCENE_BOX.height));
     const toW = SCENE_BOX.width * toScale;
     const stackHeight = STACK_GAP + 48 + 24 + SCENE_BOX.height * toScale; // gap, title (2 lines), gap, art
     const headerLine = NAV_HEIGHT + stackHeight + 8 + HEADER_HEIGHT / 2;
@@ -100,7 +108,7 @@ const SceneStory = forwardRef(function SceneStory(
       wheelW,
       titleW: wheelW,
       headerLine,
-      wheelScale: Math.min(1, wheelW / WHEEL_BOX.width, (stageH - headerLine - 16) / WHEEL_DRAWN_HEIGHT),
+      wheelScale: Math.min(wheelMax, (stageH - headerLine - 16) / WHEEL_DRAWN_HEIGHT),
     };
   }
   const wheelScale = Math.max(0.1, layout.wheelScale);
