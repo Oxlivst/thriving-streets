@@ -230,12 +230,14 @@ const SceneStory = forwardRef(function SceneStory(
     <div
       ref={block}
       className="scene-story relative"
-      style={{ height: stageH ? blockHeight : '100svh', '--story-enter': `${ENTER_PX}px` }}
+      style={{ height: stageH ? blockHeight : '100lvh', '--story-enter': `${ENTER_PX}px` }}
     >
       {[0, ...indicators.map((_, i) => ENTER_PX + i * STEP_PX)].map((at) => (
         <span key={at} className="story-snap" style={{ top: at }} aria-hidden="true" />
       ))}
-      <div ref={measureStage} className="scene-story__stage sticky top-0 h-svh">
+      {/* The stage is as tall as the screen with the browser's toolbars hidden (lvh), as they
+          usually are while scrolling down; when they show, they cover its bottom edge. */}
+      <div ref={measureStage} className="scene-story__stage sticky top-0 h-lvh">
         {stageW > 0 && (
           <>
             {/* The scene: laid out at its page size in the middle, then moved and scaled aside. */}
