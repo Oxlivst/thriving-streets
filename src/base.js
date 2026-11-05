@@ -12,5 +12,8 @@ import './styles/main.css';
 import { initHeader } from './scripts/header.js';
 import { initRise } from './scripts/rise.js';
 
+// The site's scripts have started: keeps the JavaScript notice hidden (see each page's head).
+document.documentElement.classList.add('js-ready');
+
 initHeader();
 initRise();

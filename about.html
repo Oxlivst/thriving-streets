@@ -10,10 +10,18 @@
       .rise-pending [data-rise]:not(.rise-in) {
         opacity: 0;
       }
+      /* JavaScript notice (top of the body): hidden while JavaScript runs, unless the
+         site's own scripts haven't started within 5s (blocked or failed to load). */
+      .js:not(.js-failed) .js-notice {
+        display: none;
+      }
     </style>
     <script>
-      document.documentElement.classList.add('rise-pending');
+      document.documentElement.classList.add('js', 'rise-pending');
       setTimeout(() => document.documentElement.classList.remove('rise-pending'), 3000);
+      setTimeout(() => {
+        if (!document.documentElement.classList.contains('js-ready')) document.documentElement.classList.add('js-failed');
+      }, 5000);
     </script>
     <title>About the project | Future Streets Oxfordshire</title>
     <meta
@@ -24,6 +32,15 @@
   </head>
 
   <body>
+    <!-- ===== SECTION: JavaScript notice =====
+         Shown when JavaScript is off, or when the site's scripts didn't load (see the
+         script in the head; src/base.js marks them as started). -->
+    <div class="js-notice" role="note">
+      <p>
+        Parts of this site, like the interactive scenes, the wheels and the page contents, need JavaScript. Turn on JavaScript
+        in your browser, or open this page in another browser, to see everything.
+      </p>
+    </div>
     <!-- ===== SECTION: Top navigation ===== -->
     <header class="site-header">
       <nav class="site-nav" aria-label="Main">
@@ -43,7 +60,39 @@
            "Read more" layers for the depth. The side nav is built from the sections by
            src/components/SectionNav.jsx (a drawer below 960px). -->
       <div class="page-guide mt-[115px]">
-        <nav class="side-nav" aria-label="On this page" id="side-nav"></nav>
+        <!-- Plain links for when JavaScript is off; SectionNav replaces them (with the
+             current-section highlight and the drawer on smaller screens). -->
+        <nav class="side-nav" aria-label="On this page" id="side-nav">
+          <ul class="side-nav__list">
+            <li>
+              <a class="side-nav__link" href="#why-now" title="Why this, why now?"><span class="side-nav__label">Why this, why now?</span></a>
+            </li>
+            <li>
+              <a class="side-nav__link" href="#kind-of-vision" title="What kind of vision is this?"><span class="side-nav__label">What kind of vision is this?</span></a>
+            </li>
+            <li>
+              <a class="side-nav__link" href="#different-indicators" title="How are these different from other indicators?"><span class="side-nav__label">How are these different from other indicators?</span></a>
+            </li>
+            <li>
+              <a class="side-nav__link" href="#where-we-started" title="Where did we start from?"><span class="side-nav__label">Where did we start from?</span></a>
+            </li>
+            <li>
+              <a class="side-nav__link" href="#the-journey" title="The journey. How did it unfold?"><span class="side-nav__label">The journey. How did it unfold?</span></a>
+            </li>
+            <li>
+              <a class="side-nav__link" href="#who-took-part" title="Who took part?"><span class="side-nav__label">Who took part?</span></a>
+            </li>
+            <li>
+              <a class="side-nav__link" href="#who-made-it-happen" title="Who made it happen?"><span class="side-nav__label">Who made it happen?</span></a>
+            </li>
+            <li>
+              <a class="side-nav__link" href="#thinking-behind" title="What’s the thinking behind it?"><span class="side-nav__label">What’s the thinking behind it?</span></a>
+            </li>
+            <li>
+              <a class="side-nav__link" href="#what-next" title="Where does this work go from here?"><span class="side-nav__label">Where does this work go from here?</span></a>
+            </li>
+          </ul>
+        </nav>
 
         <div class="page-guide__content gap-16">
           <!-- ===== 1. Why this, why now? ===== -->
