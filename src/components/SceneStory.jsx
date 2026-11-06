@@ -56,7 +56,11 @@ const STEP_PX = 480; // scroll per indicator
 const GRID_MAX = 1200; // the two halves together (as in the old focus view)
 const GRID_GUTTER = 24;
 const GRID_PAD = 32;
-const SCENE_FIT = 0.8; // beside the wheel, the scene is 80% of its half
+// Beside the wheel the scene fills its half (as wide as the wheel's row opposite), unless the
+// screen is too short: then it's as large as fits under its title (room kept for a two-line
+// title and a bottom margin). Every scene shares the scene box, so they're all this wide.
+const TITLE_ROOM = 24 + 2 * 27; // gap above the drawing + two lines of title
+const BOTTOM_MARGIN = 32;
 const WHEEL_BOX = { width: 600, height: 700 }; // IndicatorWheel's own coordinate box (centre at 300, 300)
 const WHEEL_DRAWN_HEIGHT = 640; // ring top to the bottom of a third factor band, at scale 1
 const STACK_GAP = 20; // narrow screens: space between the nav and the scene's title
@@ -113,7 +117,8 @@ const SceneStory = forwardRef(function SceneStory(
     const colW = (gridW - 2 * GRID_PAD - 5 * GRID_GUTTER) / 6;
     const halfW = 3 * colW + 2 * GRID_GUTTER;
     const sceneColLeft = (stageW - gridW) / 2 + GRID_PAD;
-    const toW = Math.min(SCENE_BOX.width, halfW * SCENE_FIT);
+    const fitHeight = ((stageH - TITLE_TOP - TITLE_ROOM - BOTTOM_MARGIN) * SCENE_BOX.width) / SCENE_BOX.height;
+    const toW = Math.max(200, Math.min(SCENE_BOX.width, halfW, fitHeight));
     const headerLine = HEADER_CENTRE_Y;
     const ringTop = headerLine + HEADER_HEIGHT / 2 + WHEEL_GAP.wide;
     const wheelScale = Math.min(1, halfW / WHEEL_BOX.width, (stageH - ringTop - 16) / WHEEL_DRAWN_HEIGHT);
@@ -123,7 +128,7 @@ const SceneStory = forwardRef(function SceneStory(
       toW,
       wheelLeft: sceneColLeft + halfW + GRID_GUTTER,
       wheelW: halfW,
-      titleW: halfW,
+      titleW: toW, // never wider than the scene
       headerLine,
       ringTop,
       wheelScale,
