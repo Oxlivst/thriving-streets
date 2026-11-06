@@ -326,7 +326,7 @@
   .hover-label {
     @apply pointer-events-none absolute z-10 w-max max-w-[300px] px-7 pt-[14px] pb-4 text-center text-label font-semibold text-text-muted;
     transform-origin: top center;
-    transform: translateX(-50%) scale(var(--label-scale, 1)) translateY(14px);
+    transform: translateX(var(--label-x, -50%)) scale(var(--label-scale, 1)) translateY(14px);
     opacity: 0;
     transition:
       opacity 500ms var(--ease-smooth),
@@ -340,7 +340,7 @@
   /* Visible labels catch the pointer, so moving onto one keeps it open (WCAG 1.4.13). */
   .hover-label[data-visible='true'] {
     @apply pointer-events-auto cursor-pointer;
-    transform: translateX(-50%) scale(var(--label-scale, 1)) translateY(0);
+    transform: translateX(var(--label-x, -50%)) scale(var(--label-scale, 1)) translateY(0);
     opacity: 1;
     transition-duration: var(--duration-fade), var(--duration-move);
   }
@@ -1100,6 +1100,32 @@
 
   .factor__indicator img {
     @apply max-h-full w-auto max-w-full object-contain;
+  }
+
+  /* Each drawing's cell: its hover label (as on the homepage) tucks up under the drawing,
+     centred on it; in the first and last columns it lines up with the cell's outer edge
+     instead, so it stays inside the column. */
+  .factor__item {
+    @apply relative flex flex-col;
+  }
+
+  .factor__item .hover-label {
+    top: calc(100% - 24px);
+    left: 50%;
+    max-width: min(300px, calc(100vw - 32px));
+  }
+
+  .factor__item:nth-child(3n + 1) .hover-label {
+    left: 0;
+    --label-x: 0%;
+    transform-origin: top left;
+  }
+
+  .factor__item:nth-child(3n) .hover-label {
+    left: auto;
+    right: 0;
+    --label-x: 0%;
+    transform-origin: top right;
   }
 
   @media (hover: hover) {
