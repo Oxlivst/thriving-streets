@@ -4,12 +4,14 @@
 // Both come from data/indicator-mapping.csv (via src/data/indicators.json): the six
 // themes in sheet order, each with its factors and their summaries (the sheet's `0.` row).
 // The "Overview" section above them is static copy in themes.html.
-// Under each factor's summary: the drawings of the indicators that map to it; clicking
-// one opens its wheel (IndicatorModal).
+// Under each factor's summary: the drawings of the indicators that map to it. Resting the
+// mouse on one (or focusing it) shows its text in a label, as on the homepage; clicking one
+// opens its wheel (IndicatorModal).
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import data from '../data/indicators.json';
 import IndicatorModal from './IndicatorModal.jsx';
+import HoverLabelBody, { LABEL_DELAY_MS, LABEL_HINT } from './HoverLabelBody.jsx';
 import { scenes } from '../config/scenes.js';
 import { WHEEL_THEMES, themeBg, themeText } from '../config/themes.js';
 import SectionNav from './SectionNav.jsx';
@@ -58,6 +60,24 @@ export function ThemesNav() {
 
 export function ThemeSections() {
   const [open, setOpen] = useState(null); // { indicator, theme } whose wheel is open
+
+  // The drawing being hovered (mouse) or focused, as "factor:number" (an indicator can sit
+  // under several factors); its label shows after LABEL_DELAY_MS, as on the homepage.
+  const [hovered, setHovered] = useState(null);
+  const [labelFor, setLabelFor] = useState(null);
+  useEffect(() => {
+    setLabelFor(null);
+    if (hovered === null) return;
+    const t = setTimeout(() => setLabelFor(hovered), LABEL_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [hovered]);
+  // Esc hides the label until the hover moves to another drawing.
+  useEffect(() => {
+    if (labelFor === null) return;
+    const onKey = (e) => e.key === 'Escape' && setLabelFor(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [labelFor]);
   return (
     <>
       {themes.map((theme, i) => (
@@ -87,20 +107,44 @@ export function ThemeSections() {
                       Indicators drawing on {factor.name.toLowerCase()}:
                     </p>
                     <ul className="factor__indicators" aria-labelledby={`${factor.key}-indicators`}>
-                      {indicatorsByFactor.get(factor.key).map((indicator) => (
-                        // role: display: contents drops the list item from some screen readers.
-                        <li key={indicator.number} className="contents" role="listitem">
-                          <button
-                            type="button"
-                            className="factor__indicator"
-                            aria-label={`${indicator.text}. Opens its themes and factors.`}
-                            aria-haspopup="dialog"
-                            onClick={() => setOpen({ indicator, theme: theme.key })}
+                      {indicatorsByFactor.get(factor.key).map((indicator) => {
+                        const id = `${factor.key}:${indicator.number}`;
+                        const leave = () => setHovered((h) => (h === id ? null : h));
+                        return (
+                          <li
+                            key={indicator.number}
+                            className="factor__item"
+                            // Mouse only: a tap opens the wheel straight away.
+                            onPointerEnter={(e) => e.pointerType === 'mouse' && setHovered(id)}
+                            onPointerLeave={leave}
                           >
-                            <img src={indicator.thumbnail} alt="" loading="lazy" decoding="async" />
-                          </button>
-                        </li>
-                      ))}
+                            <button
+                              type="button"
+                              className="factor__indicator"
+                              aria-label={`${indicator.text}. Opens its themes and factors.`}
+                              aria-haspopup="dialog"
+                              onClick={() => {
+                                setHovered(null);
+                                setOpen({ indicator, theme: theme.key });
+                              }}
+                              onFocus={(e) => e.currentTarget.matches(':focus-visible') && setHovered(id)}
+                              onBlur={leave}
+                            >
+                              <img src={indicator.thumbnail} alt="" loading="lazy" decoding="async" />
+                            </button>
+                            {/* The label repeats the button's name, so screen readers skip it. While
+                                shown it catches the pointer, so the mouse can rest on it (WCAG 1.4.13). */}
+                            <div
+                              className="hover-label"
+                              aria-hidden="true"
+                              data-visible={labelFor === id}
+                              onClick={() => setOpen({ indicator, theme: theme.key })}
+                            >
+                              <HoverLabelBody text={indicator.text} hint={LABEL_HINT} />
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </>
                 )}

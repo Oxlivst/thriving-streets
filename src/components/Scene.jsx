@@ -12,6 +12,7 @@
 import { memo, useEffect, useId, useRef, useState } from 'react';
 import { SCENE_BOX } from '../config/scenes.js';
 import { scrollEffectsOff } from '../scripts/motion.js';
+import HoverLabelBody, { LABEL_DELAY_MS, LABEL_HINT } from './HoverLabelBody.jsx';
 
 const ALPHA_THRESHOLD = 24;
 const SWITCH_DELAY_MS = 120; // moving from one illustration to another
@@ -20,15 +21,8 @@ const SELECTED_HALO_OPACITY = 0.5; // halo behind the selected illustration in t
 const HALO_SIZE = 0.75; // halo size relative to the positions in scenes.js (1 = as designed)
 const TITLE_SHOW_AT = 0.67; // share of the illustrations on screen before the scene description appears
 const PARALLAX_PX = 24; // largest scroll drift of an illustration (depth ±1), page scenes only
-const LABEL_DELAY_MS = 500; // hover time before the indicator text appears
 const LABEL_OVERLAP = 48; // how far the label tucks up into the illustration, in scene px
 const LABEL_WIDTH = 300; // max label width at 1:1, in px (matches .hover-label in main.css)
-const LABEL_HINT = 'Click to see the themes behind it';
-
-// Hand-drawn, slightly uneven pill behind hover labels (stretched to fit the text).
-const LABEL_BLOB =
-  'M16 9C58 3 112 7 166 5C214 3 252 1 284 6C295 8 297 17 291 22C298 27 300 41 296 51C292 62 271 64 240 63' +
-  'C190 62 150 68 100 66C70 65 40 68 18 64C6 62 2 52 4 42C0 34 2 24 6 18C7 12 10 10 16 9Z';
 
 // Indicator text under an illustration. Text keeps its size at any scene scale.
 // While visible, the label holds the hover for its illustration, so the pointer can rest on it.
@@ -52,18 +46,7 @@ function HoverLabel({ slot, text, hint, chevron = false, visible, scale }) {
         maxWidth: labelWidth,
       }}
     >
-      <svg viewBox="0 0 300 70" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden="true">
-        <path d={LABEL_BLOB} fill="var(--color-bg-alt)" />
-      </svg>
-      <p className="relative inline-flex items-center justify-center gap-1">
-        {text}
-        {chevron && (
-          <svg viewBox="0 0 12 12" className="size-3 shrink-0" aria-hidden="true">
-            <path d="M4.5 2.5L8 6L4.5 9.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
-      </p>
-      {hint && <p className="hover-label__hint">{hint}</p>}
+      <HoverLabelBody text={text} hint={hint} chevron={chevron} />
     </div>
   );
 }
