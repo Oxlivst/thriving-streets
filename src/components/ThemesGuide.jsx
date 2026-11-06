@@ -51,7 +51,7 @@ const paragraphs = (text) => text.split(/\s+(?=\d+\.\s)/).filter(Boolean);
 // Side nav: Overview, then the six themes (each highlighted in its colour).
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview' },
-  ...themes.map((theme) => ({ id: theme.key, label: sentenceCase(theme.title), colour: themeText(theme.key) })),
+  ...themes.map((theme) => ({ id: theme.key, label: sentenceCase(theme.title), colour: themeBg(theme.key) })),
 ];
 
 export function ThemesNav() {

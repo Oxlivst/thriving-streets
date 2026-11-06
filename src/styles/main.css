@@ -964,7 +964,7 @@
     @apply bg-bg;
   }
 
-  /* Current section: the theme's colour (the darker one, so white text stays readable). */
+  /* Current section: filled with the theme's colour (its -bg shade, as on the wheel), white text. */
   .side-nav__link[aria-current] {
     @apply font-extrabold text-white;
     background-color: var(--theme-colour, var(--color-text));
