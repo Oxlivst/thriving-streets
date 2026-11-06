@@ -443,8 +443,9 @@
     @apply flex shrink-0 gap-4;
   }
 
+  /* 16/24, a step below body copy (the scene description beside it is 16–18px bold). */
   .wheel-header__label {
-    @apply min-w-0 truncate text-body font-semibold text-text;
+    @apply min-w-0 truncate text-[1rem] leading-6 font-semibold text-text;
   }
 
   .wheel-header__button {
