@@ -18,7 +18,7 @@ const ALPHA_THRESHOLD = 24;
 const SWITCH_DELAY_MS = 120; // moving from one illustration to another
 const LEAVE_DELAY_MS = 180; // moving off all illustrations
 const SELECTED_HALO_OPACITY = 0.5; // halo behind the selected illustration in the focus view (0 = off)
-const HALO_SIZE = 0.75; // halo size relative to the positions in scenes.js (1 = as designed)
+const HALO_SIZE = 1; // halo size relative to the positions in scenes.js (1 = as designed; was 0.75)
 const TITLE_SHOW_AT = 0.67; // share of the illustrations on screen before the scene description appears
 const PARALLAX_PX = 24; // largest scroll drift of an illustration (depth ±1), page scenes only
 const LABEL_OVERLAP = 48; // how far the label tucks up into the illustration, in scene px
