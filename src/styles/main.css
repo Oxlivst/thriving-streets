@@ -288,9 +288,11 @@
     transform: translateY(-6px);
   }
 
-  /* Selected illustration in the focus view: slightly larger, in place of a halo. */
+  /* The focused (current) illustration: 20% larger, and drawn above its neighbours so the
+     extra size isn't hidden under them. */
   .scene-slot[data-selected='true'] {
-    scale: 1.06;
+    scale: 1.2;
+    z-index: 1;
   }
 
   .scene-slot img {
